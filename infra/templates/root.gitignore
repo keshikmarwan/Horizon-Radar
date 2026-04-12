@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+node_modules/
+.next/
+coverage/
+playwright-report/
+backend/.pytest_cache/
+backend/snapshots/
+backend/reports/
+backend/data/
+backend/horizonradar.db
+frontend/tsconfig.tsbuildinfo
+runtime/
+*.log
+.DS_Store
