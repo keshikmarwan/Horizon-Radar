@@ -1,4 +1,6 @@
-import hashlib
+from __future__ import annotations
+
+import logging
 
 import httpx
 import numpy as np
@@ -6,6 +8,24 @@ import numpy as np
 from app.core.config import get_settings
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
+
+# Lazy-loaded sentence-transformers model (loaded once on first use).
+_st_model = None
+_ST_MODEL_NAME = 'all-MiniLM-L6-v2'
+
+
+def _get_st_model():
+    global _st_model
+    if _st_model is None:
+        try:
+            from sentence_transformers import SentenceTransformer  # type: ignore
+            _st_model = SentenceTransformer(_ST_MODEL_NAME)
+            logger.info('sentence-transformers model loaded: %s', _ST_MODEL_NAME)
+        except Exception as exc:
+            logger.warning('sentence-transformers not available (%s); semantic matching will be degraded.', exc)
+            _st_model = False  # Mark as unavailable so we don't retry every call.
+    return _st_model if _st_model is not False else None
 
 
 class EmbeddingService:
@@ -47,12 +67,26 @@ class EmbeddingService:
         return vector
 
     def _embed_local(self, text: str) -> list[float]:
-        digest = hashlib.sha512(text.encode('utf-8')).digest()
-        seed = int.from_bytes(digest[:8], 'big', signed=False)
-        rng = np.random.default_rng(seed)
-        vec = rng.normal(0, 1, self.dim).astype(np.float32)
-        vec /= np.linalg.norm(vec) + 1e-8
-        return vec.tolist()
+        model = _get_st_model()
+        if model is not None:
+            vec = model.encode(text[:8192], normalize_embeddings=True)
+            vec = np.array(vec, dtype=np.float32)
+            # Resize if model output dimension differs from configured dim.
+            if len(vec) != self.dim:
+                if len(vec) > self.dim:
+                    vec = vec[:self.dim]
+                else:
+                    vec = np.pad(vec, (0, self.dim - len(vec)))
+                norm = np.linalg.norm(vec) + 1e-8
+                vec = vec / norm
+            return vec.tolist()
+        # Last-resort fallback: zero vector (will produce 0.5 cosine after normalization shift).
+        # Warns clearly so the operator knows semantic matching is non-functional.
+        logger.error(
+            'No embedding provider available (no OpenAI key, sentence-transformers not installed). '
+            'Install sentence-transformers: pip install sentence-transformers'
+        )
+        return [0.0] * self.dim
 
     @staticmethod
     def cosine(a: list[float], b: list[float]) -> float:

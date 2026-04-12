@@ -32,6 +32,14 @@ COMPLIANCE_KEYWORDS: dict[str, str] = {
 def _clean_text(text: str) -> str:
     text = text.replace('\r\n', '\n').replace('\r', '\n')
     text = re.sub(r'[ \t]+', ' ', text)
+    # Strip repeated PDF page headers that break mid-topic section extraction.
+    # Matches patterns like: "Part 4 - Page 29 of 211\nHorizon Europe - Work Programme 2026-2027\nHealth\n"
+    text = re.sub(
+        r'\nPart \d+ - Page \d+ of \d+\nHorizon Europe[^\n]*\n[^\n]{1,60}\n',
+        '\n',
+        text,
+        flags=re.IGNORECASE,
+    )
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 

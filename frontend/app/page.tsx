@@ -224,7 +224,7 @@ export default function DashboardPage() {
       const formData = new FormData();
       formData.append('file', file);
       const extracted = await apiPostFormData<{ text: string; extracted_by?: string; chars?: number }>('/api/extract-text', formData);
-      fileText = (extracted.text || '').slice(0, 300000);
+      fileText = (extracted.text || '').slice(0, 600000);
       extractedBy = extracted.extracted_by || 'backend';
       extractedChars = extracted.chars || fileText.length;
       if (!fileText) extractionError = 'Estrazione completata ma testo vuoto.';
