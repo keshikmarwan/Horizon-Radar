@@ -37,7 +37,7 @@ require_cmd() {
 }
 
 pick_python() {
-  local candidates=("python3.12" "python3.11" "python3.10" "python3")
+  local candidates=("python3.14" "python3.13" "python3.12" "python3.11" "python3.10" "python3")
   for candidate in "${candidates[@]}"; do
     if command -v "$candidate" >/dev/null 2>&1; then
       echo "$candidate"
@@ -100,9 +100,12 @@ fi
 mkdir -p "$RUNTIME_DIR" "$LOG_DIR" "$BACKEND_DIR/data"
 mkdir -p "$RUNTIME_DIR/reports" "$RUNTIME_DIR/snapshots"
 
+GROQ_API_KEY_VALUE="${GROQ_API_KEY:-}"
+
 cat > "$BACKEND_DIR/.env" <<EOF
 DATABASE_URL=sqlite:///./data/horizonradar.db
 REDIS_URL=redis://localhost:6379/0
+GROQ_API_KEY=${GROQ_API_KEY_VALUE}
 OPENAI_API_KEY=
 EMBEDDING_PROVIDER=local
 EMBEDDING_MODEL=text-embedding-3-small
@@ -115,6 +118,14 @@ SMTP_PASSWORD=
 EMAIL_FROM=noreply@horizonradar.local
 APP_BASE_URL=http://localhost:${FRONTEND_PORT}
 EOF
+
+if [[ -z "$GROQ_API_KEY_VALUE" ]]; then
+  echo ""
+  echo "⚠  GROQ_API_KEY non trovata. Scoring LLM e estrazione topic non funzioneranno."
+  echo "   Ottieni una chiave gratuita su https://console.groq.com/"
+  echo "   Poi rilancia con: GROQ_API_KEY=gsk_... ./scripts/launch/start-mac.sh"
+  echo ""
+fi
 
 cat > "$FRONTEND_DIR/.env.local" <<EOF
 NEXT_PUBLIC_API_URL=${API_URL}
@@ -178,13 +189,13 @@ chmod -R +x "$FRONTEND_DIR/node_modules/.bin" >/dev/null 2>&1 || true
 kill_port "$BACKEND_PORT"
 kill_port "$FRONTEND_PORT"
 
-BACKEND_CMD="cd \"$BACKEND_DIR\" && source .venv/bin/activate && export PYTHONNOUSERSITE=1 && export PYTHONPATH=\"$BACKEND_DIR\" && export DATABASE_URL='sqlite:///./data/horizonradar.db' && export REDIS_URL='redis://localhost:6379/0' && export EMBEDDING_PROVIDER='local' && export OPENAI_API_KEY='' && python3 -m uvicorn app.main:app --host $BACKEND_HOST --port $BACKEND_PORT --reload"
+BACKEND_CMD="cd \"$BACKEND_DIR\" && source .venv/bin/activate && export PYTHONNOUSERSITE=1 && export PYTHONPATH=\"$BACKEND_DIR\" && export DATABASE_URL='sqlite:///./data/horizonradar.db' && export REDIS_URL='redis://localhost:6379/0' && export EMBEDDING_PROVIDER='local' && export OPENAI_API_KEY='' && export GROQ_API_KEY='$GROQ_API_KEY_VALUE' && python3 -m uvicorn app.main:app --host $BACKEND_HOST --port $BACKEND_PORT --reload"
 FRONTEND_CMD="cd \"$FRONTEND_DIR\" && npm run dev -- -H 0.0.0.0 -p $FRONTEND_PORT"
 
 if ! osascript <<EOF
 tell application "Terminal"
   activate
-  do script "bash -lc 'cd \"$BACKEND_DIR\" && source .venv/bin/activate && export PYTHONNOUSERSITE=1 && export PYTHONPATH=\"$BACKEND_DIR\" && export DATABASE_URL=\"sqlite:///./data/horizonradar.db\" && export REDIS_URL=\"redis://localhost:6379/0\" && export EMBEDDING_PROVIDER=\"local\" && export OPENAI_API_KEY=\"\" && python3 -m uvicorn app.main:app --host $BACKEND_HOST --port $BACKEND_PORT --reload'"
+  do script "bash -lc 'cd \"$BACKEND_DIR\" && source .venv/bin/activate && export PYTHONNOUSERSITE=1 && export PYTHONPATH=\"$BACKEND_DIR\" && export DATABASE_URL=\"sqlite:///./data/horizonradar.db\" && export REDIS_URL=\"redis://localhost:6379/0\" && export EMBEDDING_PROVIDER=\"local\" && export OPENAI_API_KEY=\"\" && export GROQ_API_KEY=\"$GROQ_API_KEY_VALUE\" && python3 -m uvicorn app.main:app --host $BACKEND_HOST --port $BACKEND_PORT --reload'"
   do script "bash -lc 'cd \"$FRONTEND_DIR\" && npm run dev -- -H 0.0.0.0 -p $FRONTEND_PORT'"
 end tell
 EOF
