@@ -68,6 +68,7 @@ from app.services.report_service import (
     generate_monthly_report,
     generate_web_report,
 )
+from app.services.extraction_service import extract_topics_from_pdf
 from app.services.file_extract_service import extract_text_from_upload
 from app.services.work_programme_pdf_service import ingest_work_programme_pdf, ingest_work_programme_text
 
@@ -265,6 +266,16 @@ def trigger_ingest_work_programme_text(
         matched_profiles = len(profiles)
 
     result['matched_profiles'] = matched_profiles
+    return result
+
+
+@router.post('/ingest/extract-topics')
+async def extract_topics_endpoint(
+    file: UploadFile = File(...),
+):
+    """Extract structured topics from an EU Work Programme PDF using Groq LLM."""
+    data = await file.read()
+    result = extract_topics_from_pdf(data=data, filename=file.filename or 'upload.pdf')
     return result
 
 
