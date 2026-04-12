@@ -14,8 +14,6 @@ import os
 import re
 from typing import Any
 
-import fitz  # PyMuPDF
-
 from app.schemas.extraction import (
     CROSS_CUTTING_ALLOWED,
     ExtractedTopic,
@@ -108,6 +106,8 @@ def extract_text_from_pdf(data: bytes) -> tuple[list[str], int]:
     Returns:
         Tuple of (list of page texts, total page count).
     """
+    import fitz  # PyMuPDF — imported lazily to avoid crashing the app if not installed
+
     doc = fitz.open(stream=data, filetype="pdf")
     pages: list[str] = []
     for page in doc:
