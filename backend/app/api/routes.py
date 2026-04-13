@@ -35,7 +35,10 @@ from app.schemas.api import (
     MatchResultV2Out,
     MatchExplanationV2Out,
     TopicDecisionCardV2Out,
+    HorizonMatcherScoreIn,
+    HorizonMatcherScoreOut,
 )
+from app.services.horizon_matcher import HorizonMatcherEngine, HorizonMatcherError
 from app.services.draft_hunter_service import run_draft_hunter
 from app.services.ingestion_service import ingest_calls
 from app.services.matching_service import recompute_matches
@@ -53,11 +56,28 @@ from app.services.file_extract_service import extract_text_from_upload
 from app.services.work_programme_pdf_service import ingest_work_programme_pdf, ingest_work_programme_text
 
 router = APIRouter()
+horizon_matcher_engine = HorizonMatcherEngine()
 
 
 @router.get('/health')
 def health():
     return {'status': 'ok'}
+
+
+@router.get('/horizon-matcher/status')
+def horizon_matcher_status():
+    return horizon_matcher_engine.status()
+
+
+@router.post('/horizon-matcher/score', response_model=HorizonMatcherScoreOut)
+def horizon_matcher_score(
+    payload: HorizonMatcherScoreIn,
+    _current_user_id: str = Depends(get_current_user_id),
+):
+    try:
+        return horizon_matcher_engine.score(profile=payload.profile.model_dump(), top_n=payload.top_n)
+    except HorizonMatcherError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get('/dashboard/overview', response_model=DashboardOverviewOut)
