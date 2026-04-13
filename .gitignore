@@ -42,3 +42,13 @@ Thumbs.db
 .env.local
 frontend/.env.local
 backend/.env
+
+# Local agent worktrees / scratch
+.claude/
+
+# Matcher local artifacts
+backend/data/horizon_matcher/*
+!backend/data/horizon_matcher/.gitkeep
+!backend/data/horizon_matcher/calls.json
+!backend/data/horizon_matcher/index.faiss
+!backend/data/horizon_matcher/metadata.json
