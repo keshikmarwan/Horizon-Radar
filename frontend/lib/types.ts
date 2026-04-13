@@ -101,3 +101,34 @@ export type Draft = {
   diff_summary: string | null;
   discovered_at: string;
 };
+
+export type HorizonMatcherScoreBreakdown = {
+  impact_match: number;
+  technical_match: number;
+  semantic_score: number;
+  bm25_score: number;
+  bm25_boost_applied: boolean;
+  trl_score: number;
+  eligibility_score: number;
+  constraints_score: number;
+  weights_used: Record<string, number>;
+};
+
+export type HorizonMatcherResult = {
+  call_id: string;
+  title: string;
+  cluster: string | null;
+  type_of_action: string | null;
+  reliability_score: number;
+  score_breakdown: HorizonMatcherScoreBreakdown;
+  spider_axes: Record<string, number>;
+  justification: string;
+};
+
+export type HorizonMatcherResponse = {
+  generated_at: string;
+  top_n: number;
+  total_calls: number;
+  results: HorizonMatcherResult[];
+  status: Record<string, unknown>;
+};

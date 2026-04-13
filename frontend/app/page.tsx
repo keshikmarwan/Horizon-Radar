@@ -39,6 +39,17 @@ const sections: PromoSection[] = [
     secondary: { label: 'Vedi CL2', href: '/cluster/CL2' },
   },
   {
+    eyebrow: 'Matcher',
+    title: 'Reliability score locale.',
+    subtitle: 'Match semantico tra profilo e Work Programme con audit log e spiegazioni, dentro lo stesso workspace.',
+    tone: 'dark',
+    backgroundImage: '/images/IDG_GBionics_render_021_rK-sZdFO9s-rgTKZOlOl6.jpg',
+    backgroundPosition: 'center 16%',
+    backgroundSize: '90% auto',
+    primary: { label: 'Apri Matcher', href: '/matcher' },
+    secondary: { label: 'Apri Pipeline', href: '/cluster/CL1' },
+  },
+  {
     eyebrow: 'Profiles',
     title: 'Profili aziendali più utili.',
     subtitle: 'Capacità, evidenze e storico in una vista unica per decidere rapidamente il fit sui bandi.',

@@ -4228,3 +4228,144 @@ body::before {
   border-color: rgba(120, 186, 255, 0.5);
   background: rgba(74, 136, 196, 0.26);
 }
+
+/* Horizon Matcher page */
+.matcher-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.matcher-hero {
+  width: min(1120px, 92vw);
+  margin: 0 auto;
+  padding: clamp(1.2rem, 2.2vw, 1.8rem);
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background:
+    radial-gradient(640px 220px at 50% 0%, rgba(255, 255, 255, 0.12), transparent 72%),
+    linear-gradient(180deg, #0b0b0d 0%, #060609 100%);
+  text-align: center;
+}
+
+.matcher-kicker {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.74rem;
+  color: rgba(245, 245, 247, 0.72);
+}
+
+.matcher-hero h1 {
+  margin: 0.35rem 0 0.3rem;
+  font-size: clamp(1.8rem, 4.3vw, 3.2rem);
+  letter-spacing: -0.03em;
+}
+
+.matcher-hero p {
+  margin: 0;
+  color: rgba(245, 245, 247, 0.82);
+  font-size: clamp(0.95rem, 1.5vw, 1.08rem);
+}
+
+.matcher-form,
+.matcher-results {
+  width: min(1120px, 92vw);
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 1.4rem);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.03));
+}
+
+.matcher-form label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.86rem;
+  color: rgba(245, 245, 247, 0.88);
+}
+
+.matcher-form textarea,
+.matcher-form input,
+.matcher-form select {
+  width: 100%;
+  margin-top: 0.35rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(4, 5, 7, 0.42);
+  color: #fff;
+  padding: 0.62rem 0.7rem;
+}
+
+.matcher-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.matcher-grid--compact {
+  grid-template-columns: repeat(2, minmax(0, 240px));
+}
+
+.matcher-toggles {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin: 0.3rem 0 0.85rem;
+}
+
+.matcher-toggles label {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.matcher-form button {
+  border-radius: 999px;
+  border: 1px solid rgba(72, 170, 255, 0.72);
+  background: linear-gradient(180deg, rgba(79, 168, 247, 0.92), rgba(40, 128, 214, 0.92));
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.62rem 1.1rem;
+}
+
+.matcher-form button:disabled {
+  opacity: 0.6;
+}
+
+.matcher-card-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.matcher-card {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.9rem;
+}
+
+.matcher-card h4 {
+  margin: 0.1rem 0 0.25rem;
+  letter-spacing: -0.02em;
+}
+
+.matcher-card p {
+  margin: 0;
+}
+
+.matcher-score {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #84c8ff;
+}
+
+@media (max-width: 860px) {
+  .matcher-grid,
+  .matcher-grid--compact {
+    grid-template-columns: 1fr;
+  }
+}
