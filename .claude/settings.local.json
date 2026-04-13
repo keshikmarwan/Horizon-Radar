@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(py|json|faiss|txt|md\\)$\")",
+      "Bash(find /Users/m.keshik/Desktop/Horizon-Radar -maxdepth 1 -type d -name \".claude\" -exec ls -la {} \\\\;)",
+      "Bash(git -C /Users/m.keshik/Desktop/Horizon-Radar worktree list)",
+      "Bash(chmod +x /Users/m.keshik/Desktop/Horizon-Radar/start.sh)",
+      "Bash(git worktree:*)"
+    ]
+  }
+}
