@@ -34,10 +34,10 @@ Serve a trasformare documenti Work Programme e profili aziendali in decisioni op
 2. Frontend: `http://localhost:3000`
 3. OpenAPI: `http://127.0.0.1:8000/docs`
 
-Su macOS puoi usare:
+Comando unico dalla root del progetto:
 
 ```bash
-./scripts/launch/start-mac.sh
+./start.sh
 ```
 
 ## Note di manutenzione
@@ -49,4 +49,3 @@ Su macOS puoi usare:
 ```
 
 - Gli artefatti runtime/build non devono finire nel codice sorgente.
-
