@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /WebObjects/*
+Disallow: /api/*
+Disallow: /includes/*
+Disallow: /v1/*
+
+Sitemap: https://podcasts.apple.com/sitemaps_podcasts_index_podcast_1.xml
+Sitemap: https://podcasts.apple.com/sitemaps_podcasts_index_staticUrl_1.xml
+Sitemap: https://podcasts.apple.com/sitemaps_podcasts_index_genre_1.xml

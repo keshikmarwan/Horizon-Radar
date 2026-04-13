@@ -1,0 +1,349 @@
+/*------------------------------------*\
+   LOCAL SCREENS
+\*------------------------------------*/
+
+
+.gift-card .tile-logo {
+	width: 209px;
+	height: 39px;
+	background-size: 209px 39px;
+	background-repeat: no-repeat;
+	background-image: url("/euro/tv-home/c/generic/images/apple-gift-card/apple_gift_card_logo__es2vdqwat126_large.png");
+	margin-left: auto;
+	margin-right: auto;
+}
+
+@media only screen and (-webkit-min-device-pixel-ratio: 1.5),
+	only screen and (min-resolution: 1.5dppx),
+	(-webkit-min-device-pixel-ratio: 1.5),
+	(min-resolution: 144dpi) {
+	.gift-card .tile-logo {
+		background-image: url("/euro/tv-home/c/generic/images/apple-gift-card/apple_gift_card_logo__es2vdqwat126_large_2x.png");
+	}
+}
+
+@media only screen and (max-width: 1068px) {
+	.gift-card .tile-logo {
+		width: 142px;
+		height: 27px;
+		background-size: 142px 27px;
+		background-repeat: no-repeat;
+		background-position: 0 0;
+		background-image: url("/euro/tv-home/c/generic/images/apple-gift-card/apple_gift_card_logo__es2vdqwat126_medium.png");
+	}
+}
+
+@media only screen and (max-width: 1068px) and (-webkit-min-device-pixel-ratio: 1.5),
+	only screen and (max-width: 1068px) and (min-resolution: 1.5dppx),
+	only screen and (max-width: 1068px) and (min-resolution: 144dpi) {
+	.gift-card .tile-logo {
+		background-image: url("/euro/tv-home/c/generic/images/apple-gift-card/apple_gift_card_logo__es2vdqwat126_medium_2x.png");
+	}
+}
+
+@media only screen and (max-width: 734px) {
+	.gift-card .tile-logo {
+		width: 136px;
+		height: 25px;
+		background-size: 136px 25px;
+		background-repeat: no-repeat;
+		background-image: url("/euro/tv-home/c/generic/images/apple-gift-card/apple_gift_card_logo__es2vdqwat126_small.png");
+	}
+}
+
+@media only screen and (max-width: 734px) and (-webkit-min-device-pixel-ratio: 1.5),
+	only screen and (max-width: 734px) and (min-resolution: 1.5dppx),
+	only screen and (max-width: 734px) and (min-resolution: 144dpi) {
+	.gift-card .tile-logo {
+		background-image: url("/euro/tv-home/c/generic/images/apple-gift-card/apple_gift_card_logo__es2vdqwat126_small_2x.png");
+	}
+}
+/*------------------------------------*\
+   END LOCAL SCREENS
+\*------------------------------------*/
+
+
+
+
+/*------------------------------------*\
+   LOCAL FIXES
+\*------------------------------------*/
+
+/* Big Screen Section - GEO ALTS */
+
+.section-big-screen .video-wrapper .video-alt-captions {
+	margin-top: 10px;
+}
+
+.section-big-screen .video-wrapper .video-alt-captions .alt-caption a {
+	color: #6e6e73;
+}
+
+.section-big-screen .section-geo-alt-caption {
+	position: relative;
+    text-align: left;
+    margin-top: 0px;
+    margin-bottom: 27px;
+}
+
+.section-big-screen .section-geo-alt-caption .geo-alt-caption {
+	max-width: 1098px;
+    margin: -0.7em auto 0;
+    padding: 0 95px;
+}
+
+.section-big-screen .section-geo-alt-caption a {
+	font-weight: 500;
+	color: #6e6e73;
+}
+
+@media only screen and (max-width: 1068px) {
+	.section-big-screen .section-geo-alt-caption .geo-alt-caption {
+		max-width: 615px;
+		margin-top: 0;
+		padding-left: 0;
+		padding-right: 0;
+		padding-bottom: 1em;
+	}
+}
+
+.violator {
+	font-size: 12px;
+	line-height: 1.3333733333;
+	font-weight: 400;
+	letter-spacing: -0.01em;
+	color: #bf4800;
+	position: absolute;
+	top: -20px;
+	left: 0;
+	width: 100%;
+}
+
+.section-big-screen .service-tile.fitness > div.service-tile-image {
+	position: relative;
+}
+
+@media only screen and (max-width: 734px) {
+	.section-big-screen .section-services .service-tile-image {
+		margin-top: -10px;
+	}
+}
+
+@media only screen and (max-width: 480px) {
+	.section-big-screen .section-services .service-tile-image {
+		margin-top: 5px;
+	}
+}
+
+/* END Big Screen Section - GEO ALTS */
+
+/* gift card */
+.section-gift-card-tiles {
+	width: 100%;
+	padding-left: 30px;
+	padding-right: 30px;
+	padding-bottom: 30px;
+	box-sizing: border-box;
+	background-color: #f5f5f7;
+}
+@media only screen and (max-width: 1068px) {
+	.section-gift-card-tiles {
+		padding-left: 15px;
+		padding-right: 15px;
+	}
+}
+@media only screen and (max-width: 734px) {
+	.section-gift-card-tiles {
+		padding-left: 30px;
+		padding-right: 30px;
+	}
+}
+.gift-card {
+	position: relative;
+	display: flex;
+	background-color: #fbfbfd;
+	width: 100%;
+	max-width: 1332px;
+	margin-left: auto;
+	margin-right: auto;
+	align-items: center;
+	overflow: hidden;
+}
+
+@media only screen and (max-width: 1068px) {
+	.gift-card {
+		min-height: 404px;
+		flex-direction: column;
+		max-width: 692px;
+	}
+}
+
+@media only screen and (max-width: 734px) {
+	.gift-card {
+		min-height: inherit;
+		flex-direction: column;
+		max-width: 380px;
+	}
+}
+
+.gift-card .promo-copy-container {
+	padding-left: 7.10144%;
+	padding-top: 0;
+	display: flex;
+	align-items: center;
+	height: 100%;
+	box-sizing: border-box;
+	position: relative;
+	z-index: 1;
+	min-width: 565px;
+	padding-top: 60px;
+}
+
+@media only screen and (max-width: 1068px) {
+	.gift-card .promo-copy-container {
+		padding-left: 0;
+	}
+}
+
+@media only screen and (max-width: 734px) {
+	.gift-card .promo-copy-container {
+		min-width: inherit;
+	}
+}
+
+html.text-zoom .gift-card .promo-copy-container {
+	min-width: inherit;
+}
+
+.gift-card .promo-copy-wrapper {
+	text-align: center;
+	max-width: 280px;
+	width: 100%;
+}
+
+@media only screen and (max-width: 1068px) {
+	.gift-card .promo-copy-wrapper {
+		max-width: 290px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+}
+
+@media only screen and (max-width: 734px) {
+	.gift-card .promo-copy-wrapper {
+		max-width: initial;
+	}
+}
+
+.gift-card .promo-intro {
+	margin-top: 24px;
+}
+
+@media only screen and (max-width: 1068px) {
+	.gift-card .promo-intro {
+		margin-top: 21px;
+	}
+}
+
+.gift-card .links-inline {
+	margin-top: 11px;
+}
+
+@media only screen and (max-width: 1068px) {
+	.gift-card .links-inline {
+		margin-top: 1px;
+	}
+}
+
+@media only screen and (max-width: 734px) {
+	.gift-card .links-inline {
+		margin-top: 7px;
+	}
+}
+
+.gift-card .links-inline li {
+	display: inline-block;
+	margin-top: 0.4em;
+}
+
+@media only screen and (max-width: 1068px) {
+	.gift-card .links-inline li {
+		margin-right: 15px;
+	}
+}
+
+@media only screen and (max-width: 734px) {
+	.gift-card .links-inline li {
+		margin-top: 0;
+	}
+}
+
+@media only screen and (max-width: 1068px) {
+	.gift-card .figure-wrapper {
+		position: relative;
+		margin-top: 0px;
+	}
+}
+
+@media only screen and (max-width: 734px) {
+	.gift-card .figure-wrapper {
+		position: relative;
+		margin-top: 0px;
+	}
+}
+
+@media only screen and (max-width: 1068px) {
+	.gift-card .promo-image {
+		left: 50%;
+		margin-left: -274.5px;
+		position: relative;
+		margin-top: 11px;
+		margin-bottom: 65px;
+	}
+}
+
+@media only screen and (max-width: 734px) {
+	.gift-card .promo-image {
+		left: 50%;
+		margin-left: -347px;
+		position: relative;
+		margin-top: 39px;
+		margin-bottom: 56px;
+	}
+}
+
+html.text-zoom .gift-card .promo-image {
+	margin-left: 0;
+}
+.gift-card .typography-product-lockup {
+	font-size: 21px;
+}
+@media only screen and (max-width: 1068px) {
+	.gift-card .typography-product-lockup {
+		font-size: 19px;
+	}
+}
+@media only screen and (max-width: 734px) {
+	.gift-card .typography-product-lockup {
+		font-size: 17px;
+	}
+}
+
+@media only screen and (max-width: 1068px) {
+	.gift-card .links-inline li:nth-child(2) {
+		margin-right: 0px;
+	}
+}
+@media only screen and (max-width: 734px) {
+	.gift-card .links-inline li:nth-child(2) {
+		margin-right: 0;
+	}
+	.gift-card .promo-copy-container {
+		width: 100%;
+	}
+}
+
+/* End gift card css */
+/*------------------------------------*\
+   END LOCAL FIXES
+\*------------------------------------*/

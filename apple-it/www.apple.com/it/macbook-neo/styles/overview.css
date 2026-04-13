@@ -1,0 +1,285 @@
+/*------------------------------------*\
+   LOCAL SCREENS
+\*------------------------------------*/
+
+.section-welcome .header-headline .gradient-text {
+	--gt-color: var(--sk-body-text-color);
+	--gt-height: 1079.36508%;
+	--gt-width: 48%;
+	--gt-direction: 184deg;
+	--gt-position-x: 100%;
+	--gt-position-y: -25%;
+	--headline-margin-top:8px
+}
+
+html:not(.text-zoom, .no-image-text) .section-welcome .header-headline .gradient-text {
+	--height: 69px;
+	--width: 475px;
+	position: relative;
+	display: inline-block;
+	height: var(--height);
+	width: var(--width);
+	background-color: var(--gt-color, var(--sk-body-text-color));
+	mask-size: var(--width) var(--height)
+}
+
+@supports (mask-image: url("")) {
+	html:not(.text-zoom, .no-image-text) .section-welcome .header-headline .gradient-text {
+		mask-repeat: no-repeat;
+		mask-image:url(/it/macbook-neo/images/overview/welcome/hero_text_mask__cq2qs0i7fzo2_large.png)
+	}
+
+	@media (min-resolution: 1.5dppx),(min-resolution: 144dpi) {
+		html:not(.text-zoom, .no-image-text) .section-welcome .header-headline .gradient-text {
+			mask-image:url(/it/macbook-neo/images/overview/welcome/hero_text_mask__cq2qs0i7fzo2_large_2x.png)
+		}
+	}
+}
+
+@media (max-width: 1068px) {
+	@supports (mask-image: url("")) {
+		html:not(.text-zoom, .no-image-text) .section-welcome .header-headline .gradient-text {
+			mask-repeat: no-repeat;
+			mask-image:url(/it/macbook-neo/images/overview/welcome/hero_text_mask__cq2qs0i7fzo2_medium.png)
+		}
+
+		@media (max-width: 1068px) and (min-resolution: 1.5dppx),(max-width: 1068px) and (min-resolution: 144dpi) {
+			html:not(.text-zoom, .no-image-text) .section-welcome .header-headline .gradient-text {
+				mask-image:url(/it/macbook-neo/images/overview/welcome/hero_text_mask__cq2qs0i7fzo2_medium_2x.png)
+			}
+		}
+	}
+}
+
+@media (max-width: 734px) {
+	@supports (mask-image: url("")) {
+		html:not(.text-zoom, .no-image-text) .section-welcome .header-headline .gradient-text {
+			mask-repeat: no-repeat;
+			mask-image:url(/it/macbook-neo/images/overview/welcome/hero_text_mask__cq2qs0i7fzo2_small.png)
+		}
+
+		@media (max-width: 734px) and (min-resolution: 1.5dppx),(max-width: 734px) and (min-resolution: 144dpi) {
+			html:not(.text-zoom, .no-image-text) .section-welcome .header-headline .gradient-text {
+				mask-image:url(/it/macbook-neo/images/overview/welcome/hero_text_mask__cq2qs0i7fzo2_small_2x.png)
+			}
+		}
+	}
+}
+
+@media (max-width: 1068px) {
+	html:not(.text-zoom, .no-image-text) .section-welcome .header-headline .gradient-text {
+		--height: 62px;
+		--width:421px
+	}
+}
+
+@media (max-width: 734px) {
+	html:not(.text-zoom, .no-image-text) .section-welcome .header-headline .gradient-text {
+		--height: 39px;
+		--width:266px
+	}
+}
+
+html:not(.text-zoom, .no-image-text) .section-performance .performance-stat {
+	--height: 44px;
+	--width: 220px;
+}
+
+@supports (mask-image: url("")) {
+	html:not(.text-zoom,.no-image-text) .section-performance .performance-stat {
+		mask-repeat: no-repeat;
+		mask-image:url(/it/macbook-neo/images/overview/product-stories/performance/stats/performance_stat_1_mask__dcvhszvrhm82_large.png)
+	}
+
+	@media (min-resolution: 1.5dppx),(min-resolution: 144dpi) {
+		html:not(.text-zoom,.no-image-text) .section-performance .performance-stat {
+			mask-image:url(/it/macbook-neo/images/overview/product-stories/performance/stats/performance_stat_1_mask__dcvhszvrhm82_large_2x.png)
+		}
+	}
+}
+
+@media (max-width: 1068px) {
+	@supports (mask-image: url("")) {
+		html:not(.text-zoom,.no-image-text) .section-performance .performance-stat {
+			mask-repeat: no-repeat;
+			mask-image:url(/it/macbook-neo/images/overview/product-stories/performance/stats/performance_stat_1_mask__dcvhszvrhm82_medium.png)
+		}
+
+		@media (max-width: 1068px) and (min-resolution: 1.5dppx),(max-width: 1068px) and (min-resolution: 144dpi) {
+			html:not(.text-zoom,.no-image-text) .section-performance .performance-stat {
+				mask-image:url(/it/macbook-neo/images/overview/product-stories/performance/stats/performance_stat_1_mask__dcvhszvrhm82_medium_2x.png)
+			}
+		}
+	}
+}
+
+@media (max-width: 734px) {
+	@supports (mask-image: url("")) {
+		html:not(.text-zoom,.no-image-text) .section-performance .performance-stat {
+			mask-repeat: no-repeat;
+			mask-image:url(/it/macbook-neo/images/overview/product-stories/performance/stats/performance_stat_1_mask__dcvhszvrhm82_small.png)
+		}
+
+		@media (max-width: 734px) and (min-resolution: 1.5dppx),(max-width: 734px) and (min-resolution: 144dpi) {
+			html:not(.text-zoom,.no-image-text) .section-performance .performance-stat {
+				mask-image:url(/it/macbook-neo/images/overview/product-stories/performance/stats/performance_stat_1_mask__dcvhszvrhm82_small_2x.png)
+			}
+		}
+	}
+}
+
+@media (max-width: 1068px) {
+	html:not(.text-zoom,.no-image-text) .section-performance .performance-stat {
+		--height: 26px;
+		--width:126px;
+	}
+}
+
+@media (max-width: 734px) {
+	html:not(.text-zoom,.no-image-text) .section-performance .performance-stat {
+		--height: 34px;
+		--width: 172px;
+	}
+}
+
+html:not(.text-zoom, .no-image-text) .section-display .chapter1 .stat.stat1 .display-stat {
+	--height: 34px;
+	--width: 301px;
+	position: relative;
+	display: inline-block;
+	height: var(--height);
+	width: var(--width);
+	background-color: var(--gt-color, var(--sk-body-text-color));
+	mask-size: var(--width) var(--height)
+}
+
+@supports (mask-image: url("")) {
+	html:not(.text-zoom, .no-image-text) .section-display .chapter1 .stat.stat1 .display-stat {
+		mask-repeat: no-repeat;
+		mask-image:url(/it/macbook-neo/images/overview/product-stories/display-camera-audio/dca_stat_1_mask__fydqol8zj8ia_large.png)
+	}
+
+	@media (min-resolution: 1.5dppx),(min-resolution: 144dpi) {
+		html:not(.text-zoom, .no-image-text) .section-display .chapter1 .stat.stat1 .display-stat {
+			mask-image:url(/it/macbook-neo/images/overview/product-stories/display-camera-audio/dca_stat_1_mask__fydqol8zj8ia_large_2x.png)
+		}
+	}
+}
+
+@media (max-width: 1068px) {
+	@supports (mask-image: url("")) {
+		html:not(.text-zoom, .no-image-text) .section-display .chapter1 .stat.stat1 .display-stat {
+			mask-repeat: no-repeat;
+			mask-image:url(/it/macbook-neo/images/overview/product-stories/display-camera-audio/dca_stat_1_mask__fydqol8zj8ia_medium.png)
+		}
+
+		@media (max-width: 1068px) and (min-resolution: 1.5dppx),(max-width: 1068px) and (min-resolution: 144dpi) {
+			html:not(.text-zoom, .no-image-text) .section-display .chapter1 .stat.stat1 .display-stat {
+				mask-image:url(/it/macbook-neo/images/overview/product-stories/display-camera-audio/dca_stat_1_mask__fydqol8zj8ia_medium_2x.png)
+			}
+		}
+	}
+}
+
+@media (max-width: 734px) {
+	@supports (mask-image: url("")) {
+		html:not(.text-zoom, .no-image-text) .section-display .chapter1 .stat.stat1 .display-stat {
+			mask-repeat: no-repeat;
+			mask-image:url(/it/macbook-neo/images/overview/product-stories/display-camera-audio/dca_stat_1_mask__fydqol8zj8ia_small.png)
+		}
+
+		@media (max-width: 734px) and (min-resolution: 1.5dppx),(max-width: 734px) and (min-resolution: 144dpi) {
+			html:not(.text-zoom, .no-image-text) .section-display .chapter1 .stat.stat1 .display-stat {
+				mask-image:url(/it/macbook-neo/images/overview/product-stories/display-camera-audio/dca_stat_1_mask__fydqol8zj8ia_small_2x.png)
+			}
+		}
+	}
+}
+
+@media (max-width: 1068px) {
+	html:not(.text-zoom, .no-image-text) .section-display .chapter1 .stat.stat1 .display-stat {
+		--height: 30px;
+		--width:259px
+	}
+}
+
+@media (max-width: 734px) {
+	html:not(.text-zoom, .no-image-text) .section-display .chapter1 .stat.stat1 .display-stat {
+		--height: 39px;
+		--width:344px
+	}
+}
+
+/*------------------------------------*\
+   END LOCAL SCREENS
+\*------------------------------------*/ 
+
+
+
+
+/*------------------------------------*\
+   LOCAL FIXES
+\*------------------------------------*/
+
+.section-welcome {
+	--headline-margin-top: 1px;
+	--detail-margin-top: 10px;
+}
+
+@media (max-width: 1068px) {
+	.section-welcome {
+		--headline-margin-top: 4px;
+		--detail-margin-top: 15px;
+	}
+}
+
+@media (max-width: 734px) {
+	.section-welcome {
+		--headline-margin-top: 1px;
+		--detail-margin-top: 12px;
+	}
+}
+
+[data-component-list=MediaCardGallery] .media-gallery .card-set .media-gallery-item-battery .caption-animation-container {
+	width: 619px;
+}
+
+@media (max-width: 1068px) {
+	[data-component-list=MediaCardGallery] .media-gallery .card-set .media-gallery-item-battery .caption-animation-container {
+		width: 555px;
+	}
+}
+
+@media (max-width: 734px) {
+	[data-component-list=MediaCardGallery] .media-gallery .card-set .media-gallery-item-battery .caption-animation-container {
+		width: calc(100% - 32px);
+	}
+}
+
+@media (min-width:735px) and (max-width:1068px) {
+	.section-display .chapter1 .stat.stat1 {
+		--sk-stat-caption-lines-bottom: 2;
+	}
+}
+
+@media (max-width:1068px) {
+	.section-display .chapter1 .stat.stat2 {
+		position: relative;
+		bottom: 40px;
+	}
+}
+
+@media (max-width:734px) {
+	.section-display .chapter1 .stat.stat2 {
+		bottom: 25px;
+	}
+}
+
+.section-display .chapter1 .stat.stat1 .stat-caption {
+	position: relative;
+	top: -2px;
+}
+
+/*------------------------------------*\
+   END LOCAL FIXES
+\*------------------------------------*/ 

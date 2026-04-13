@@ -91,11 +91,11 @@ export function FitConstellationLoader({ phase = 'running' }: { phase?: FitLoade
     composer.addPass(new OutputPass());
 
     const palette = [
-      new THREE.Color(0xff8b42),
-      new THREE.Color(0xffb26b),
-      new THREE.Color(0xffd3a4),
-      new THREE.Color(0xff6f3a),
-      new THREE.Color(0xffe7c5),
+      new THREE.Color(0x7dc8ff),
+      new THREE.Color(0x4ea8ff),
+      new THREE.Color(0xb8ddff),
+      new THREE.Color(0x8ecbff),
+      new THREE.Color(0xe5f2ff),
     ];
 
     const starLayerNear = 2600;
@@ -133,7 +133,7 @@ export function FitConstellationLoader({ phase = 'running' }: { phase?: FitLoade
     const nebula = new THREE.Mesh(
       new THREE.SphereGeometry(520, 28, 28),
       new THREE.MeshBasicMaterial({
-        color: 0x2f140a,
+        color: 0x07111c,
         transparent: true,
         opacity: 0.08,
         side: THREE.BackSide,
@@ -475,7 +475,7 @@ export function FitConstellationLoader({ phase = 'running' }: { phase?: FitLoade
     const sparkGeo = new THREE.BufferGeometry();
     sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
     const sparkMat = new THREE.PointsMaterial({
-      color: 0xffe0c1,
+      color: 0xddefff,
       size: 1.06,
       sizeAttenuation: true,
       transparent: true,

@@ -1,10 +1,8 @@
 'use client';
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
+import { signIn } from 'next-auth/react';
 
-const AUTH_STORAGE_KEY = 'horizon-radar-auth-v1';
-const AUTH_USER = 'admin';
-const AUTH_PASSWORD = 'admin123';
 const LOGO_FRAMES = [
   '/images/logo-seq/1.png',
   '/images/logo-seq/2.png',
@@ -17,16 +15,17 @@ const LOGO_FRAMES = [
   '/images/logo-seq/3.png',
   '/images/logo-seq/2.png',
 ];
-const BURST_FRAMES = [
-  '/images/logo-seq/1.png',
-  '/images/logo-seq/2.png',
-  '/images/logo-seq/3.png',
-  '/images/logo-seq/4.png',
-  '/images/logo-seq/5.png',
-  '/images/logo-seq/6.png',
-];
-
 const FRAME_DURATIONS = [320, 300, 290, 290, 320, 520, 320, 290, 290, 300];
+
+const LOGIN_BG_PLAYLIST = [
+  '/videos/gb-bg/hero1.mp4',
+  '/videos/gb-bg/motion.mp4',
+  '/videos/gb-bg/main1.mp4',
+  '/videos/gb-bg/main2.mp4',
+  '/videos/gb-bg/openplat.mp4',
+  '/videos/gb-bg/touch3.mp4',
+  '/videos/gb-bg/teaser.mp4',
+];
 
 type Props = {
   children: React.ReactNode;
@@ -38,112 +37,124 @@ export function LoginGate({ children }: Props) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-
+  const [submitting, setSubmitting] = useState(false);
   const [frameIndex, setFrameIndex] = useState(0);
   const [layerA, setLayerA] = useState(LOGO_FRAMES[0]);
   const [layerB, setLayerB] = useState(LOGO_FRAMES[1]);
   const [showLayerA, setShowLayerA] = useState(true);
   const [logoKick, setLogoKick] = useState(false);
-  const [isUnlocking, setIsUnlocking] = useState(false);
-  const timeoutRef = useRef<number | null>(null);
+
+  const [bgVideoIndex, setBgVideoIndex] = useState(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const logoTimerRef = useRef<number | null>(null);
+
+  const activeBgVideo = LOGIN_BG_PLAYLIST[bgVideoIndex] || LOGIN_BG_PLAYLIST[0];
 
   useEffect(() => {
-    const value = window.localStorage.getItem(AUTH_STORAGE_KEY);
-    setAuthenticated(value === 'ok');
-    setReady(true);
+    let mounted = true;
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/auth/session', { cache: 'no-store' });
+        if (!mounted) return;
+        if (!res.ok) {
+          setAuthenticated(false);
+          setReady(true);
+          return;
+        }
+        const session = (await res.json()) as { user?: { email?: string } } | null;
+        setAuthenticated(Boolean(session?.user?.email));
+      } catch {
+        setAuthenticated(false);
+      } finally {
+        if (mounted) setReady(true);
+      }
+    };
+    void checkSession();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (isUnlocking) return;
-
-    const schedule = () => {
-      const ms = FRAME_DURATIONS[frameIndex] || 140;
-      timeoutRef.current = window.setTimeout(() => {
-        setFrameIndex((prev) => {
-          const next = (prev + 1) % LOGO_FRAMES.length;
-          const nextFrame = LOGO_FRAMES[next];
-          if (showLayerA) {
-            setLayerB(nextFrame);
-            setShowLayerA(false);
-          } else {
-            setLayerA(nextFrame);
-            setShowLayerA(true);
-          }
-          setLogoKick(true);
-          window.setTimeout(() => setLogoKick(false), 180);
-          return next;
-        });
-      }, ms);
-    };
-
-    schedule();
-
-    return () => {
-      if (timeoutRef.current) {
-        window.clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [frameIndex, showLayerA, isUnlocking]);
+    if (!videoRef.current) return;
+    videoRef.current.playbackRate = 0.84;
+    void videoRef.current.play().catch(() => {});
+  }, [activeBgVideo]);
 
   useEffect(() => {
-    if (!isUnlocking) return;
-
-    const sequence = [...BURST_FRAMES, ...BURST_FRAMES, ...BURST_FRAMES];
-    let idx = 0;
-
-    const intervalId = window.setInterval(() => {
-      const frame = sequence[idx];
-      setShowLayerA((prev) => {
-        if (prev) {
-          setLayerB(frame);
+    const ms = FRAME_DURATIONS[frameIndex] || 180;
+    logoTimerRef.current = window.setTimeout(() => {
+      setFrameIndex((prev) => {
+        const next = (prev + 1) % LOGO_FRAMES.length;
+        const nextFrame = LOGO_FRAMES[next];
+        if (showLayerA) {
+          setLayerB(nextFrame);
+          setShowLayerA(false);
         } else {
-          setLayerA(frame);
+          setLayerA(nextFrame);
+          setShowLayerA(true);
         }
-        return !prev;
+        setLogoKick(true);
+        window.setTimeout(() => setLogoKick(false), 160);
+        return next;
       });
-      setLogoKick(true);
-      window.setTimeout(() => setLogoKick(false), 110);
-      idx += 1;
+    }, ms);
 
-      if (idx >= sequence.length) {
-        window.clearInterval(intervalId);
-        window.localStorage.setItem(AUTH_STORAGE_KEY, 'ok');
-        setAuthenticated(true);
-        setIsUnlocking(false);
-      }
-    }, 85);
+    return () => {
+      if (logoTimerRef.current) window.clearTimeout(logoTimerRef.current);
+    };
+  }, [frameIndex, showLayerA]);
 
-    return () => window.clearInterval(intervalId);
-  }, [isUnlocking]);
+  const onLoginVideoEnded = () => {
+    setBgVideoIndex((idx) => (idx + 1) % LOGIN_BG_PLAYLIST.length);
+  };
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (username.trim() === AUTH_USER && password === AUTH_PASSWORD) {
-      setError('');
-      setIsUnlocking(true);
+    if (!username.trim() || !password) {
+      setError('Inserisci username e password.');
       return;
     }
 
-    setError('Credenziali non valide. Usa admin / admin123.');
+    setError('');
+    setSubmitting(true);
+
+    const result = await signIn('credentials', {
+      username: username.trim(),
+      password,
+      redirect: false,
+    });
+
+    if (result?.ok) {
+      setAuthenticated(true);
+      setSubmitting(false);
+      return;
+    }
+
+    setSubmitting(false);
+    setError('Credenziali non valide.');
   };
 
   if (!ready) {
     return (
-      <div className="login-screen" aria-hidden="true">
-        <video className="login-bg-video" autoPlay muted loop playsInline preload="auto">
-          <source src="/videos/gb-bg/motion.mp4" type="video/mp4" />
-        </video>
-        <div className="login-bg-mask" />
-        <div className="login-shell login-shell--loading">
+      <div className="login-screen login-screen--apple-video" aria-hidden="true">
+        <video
+          ref={videoRef}
+          src={activeBgVideo}
+          className="login-bg-video login-bg-video--apple"
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          onEnded={onLoginVideoEnded}
+        />
+        <div className="login-bg-mask login-bg-mask--apple" />
+        <div className="login-shell login-shell--apple-account login-shell--loading">
           <div className="login-brand-panel login-brand-panel--single">
-            <div className={logoKick ? 'login-logo-stage kick' : 'login-logo-stage'}>
-              <div className="login-logo-halo" />
-              <div className="login-logo-seq">
-                <img src={layerA} alt="" className={showLayerA ? 'logo-layer active' : 'logo-layer'} />
-                <img src={layerB} alt="" className={!showLayerA ? 'logo-layer active' : 'logo-layer'} />
-              </div>
-            </div>
+            <p className="login-kicker">Apple Account Style</p>
+            <h1>Accedi</h1>
+            <p className="small login-loading-copy">Loading...</p>
           </div>
         </div>
       </div>
@@ -152,13 +163,20 @@ export function LoginGate({ children }: Props) {
 
   if (!authenticated) {
     return (
-      <div className="login-screen">
-        <video className="login-bg-video" autoPlay muted loop playsInline preload="auto">
-          <source src="/videos/gb-bg/motion.mp4" type="video/mp4" />
-        </video>
-        <div className="login-bg-mask" />
+      <div className="login-screen login-screen--apple-video">
+        <video
+          ref={videoRef}
+          src={activeBgVideo}
+          className="login-bg-video login-bg-video--apple"
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          onEnded={onLoginVideoEnded}
+        />
+        <div className="login-bg-mask login-bg-mask--apple" />
 
-        <div className="login-shell login-shell--single">
+        <section className="login-shell login-shell--apple-account login-shell--single" aria-label="Accesso account">
           <aside className="login-brand-panel login-brand-panel--single">
             <div className={logoKick ? 'login-logo-stage kick' : 'login-logo-stage'}>
               <div className="login-logo-halo" />
@@ -167,40 +185,44 @@ export function LoginGate({ children }: Props) {
                 <img src={layerB} alt="" className={!showLayerA ? 'logo-layer active' : 'logo-layer'} />
               </div>
             </div>
+            <h1>Accedi al tuo account</h1>
+            <p className="small login-tagline">Usa il tuo account per continuare su Horizon Radar.</p>
 
-            <h1>Accesso Riservato</h1>
-            <p className="small">Autenticazione amministrativa richiesta per l&apos;accesso alla piattaforma.</p>
+            <div className="login-form-wrap login-form-wrap--apple-account">
+              <form className="login-form" onSubmit={onSubmit}>
+                <label>
+                  Username
+                  <input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
+                    placeholder="admin"
+                    disabled={submitting}
+                  />
+                </label>
 
-            <form className="login-form" onSubmit={onSubmit}>
-              <label>
-                Username
-                <input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  autoComplete="username"
-                  placeholder="admin"
-                  disabled={isUnlocking}
-                />
-              </label>
-              <label>
-                Password
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  spellCheck={false}
-                  placeholder="admin123"
-                  disabled={isUnlocking}
-                />
-              </label>
-              {error ? <p className="small login-error">{error}</p> : null}
-              <button type="submit" disabled={isUnlocking}>
-                {isUnlocking ? 'Accesso...' : 'Accedi'}
-              </button>
-            </form>
+                <label>
+                  Password
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    spellCheck={false}
+                    placeholder="Password"
+                    disabled={submitting}
+                  />
+                </label>
+
+                {error ? <p className="small login-error">{error}</p> : null}
+
+                <button type="submit" disabled={submitting}>
+                  {submitting ? 'Accesso...' : 'Continua'}
+                </button>
+              </form>
+            </div>
           </aside>
-        </div>
+        </section>
       </div>
     );
   }

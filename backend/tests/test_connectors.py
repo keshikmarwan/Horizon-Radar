@@ -40,7 +40,7 @@ def test_funding_connector_parses_topics_from_fixture():
 def test_funding_connector_fetch_topics_works_with_dummy_fetcher():
     html = """
     <div data-topic-id='HORIZON-CL4-2026-01' data-programme-part='CL4' data-action-type='RIA' data-deadline='2026-11-01T17:00:00'>
-      <span class='eui-u-font-m'>AI for resilient factories TRL 5-7</span>
+      <span class='eui-u-font-m'>Data for resilient factories TRL 5-7</span>
       <p>Expected outcomes include flexible manufacturing.</p>
     </div>
     """

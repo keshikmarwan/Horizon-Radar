@@ -16,8 +16,4 @@ celery.conf.beat_schedule = {
         'task': 'app.tasks.jobs.daily_draft_hunter',
         'schedule': crontab(hour=4, minute=0),
     },
-    'monthly-report': {
-        'task': 'app.tasks.jobs.monthly_report',
-        'schedule': crontab(hour=6, minute=0, day_of_month='1'),
-    },
 }

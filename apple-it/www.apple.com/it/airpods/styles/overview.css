@@ -1,0 +1,203 @@
+/*------------------------------------*\
+   GENERIC CSS
+\*------------------------------------*/
+
+.main {
+  --chapternav-height: 132px
+}
+
+html .seasonal-campaign-body-active footer .ac-gf-sosumi ul #footnote-1 {
+   display: block;
+}
+
+/*------------------------------------*\
+  END GENERIC CSS
+\*------------------------------------*/
+/*------------------------------------*\
+   AIRPODS PRO  2ND GEN CSS
+\*------------------------------------*/
+
+
+/* SCREENS */
+/* LOCAL FIXES */
+
+@media (min-width: 735px) and (max-width: 1068px) {
+	.section-airpods-pro-3 .content-block {
+		padding-bottom: 0;
+	}
+
+	.section-airpods-pro-3 .section-tile-wrapper {
+		padding-bottom: 30px;
+	}
+}
+
+
+/*------------------------------------*\
+  END AIRPODS PRO  2ND GEN CSS
+\*------------------------------------*/
+
+/*------------------------------------*\
+   AIRPODS 3RD GEN CSS
+\*------------------------------------*/
+
+
+/* SCREENS */
+/* LOCAL FIXES */
+
+
+/*------------------------------------*\
+   END AIRPODS 3RD GEN CSS
+\*------------------------------------*/
+
+/*------------------------------------*\
+   AIRPODS 2ND GEN CSS
+\*------------------------------------*/
+
+
+/* SCREENS */
+/* LOCAL FIXES */
+
+
+/*------------------------------------*\
+   END AIRPODS 2ND GEN CSS
+\*------------------------------------*/
+
+/*------------------------------------*\
+   AIRPODS MAX 2 CSS
+\*------------------------------------*/
+
+
+/* SCREENS */
+/* LOCAL FIXES */
+@media (max-width:1068px) {
+    .section-airpods-max-2 .section-tile-wrapper {
+        height: 600px;
+    }
+}
+
+/*------------------------------------*\
+   END AIRPODS MAX 2 CSS
+\*------------------------------------*/
+
+/*------------------------------------*\
+   CONNECTION CSS
+\*------------------------------------*/
+
+
+/* SCREENS */
+/* LOCAL FIXES */
+.overview-tile-automatic-switching {
+ display:block;
+ width:var(--p-width);
+ --p-width:370px;
+}
+@media only screen and (max-width:1068px)and (max-width:1068px) {
+ .overview-tile-automatic-switching {
+  --p-width:320px;
+ }
+}
+@media only screen and (max-width:734px)and (max-width:734px) {
+ .overview-tile-automatic-switching {
+  --p-width:280px;
+ }
+}
+
+
+
+/*------------------------------------*\
+   END CONNECTION CSS
+\*------------------------------------*/
+
+/*------------------------------------*\
+   COMPARE CSS
+\*------------------------------------*/
+
+
+/* SCREENS */
+/* LOCAL FIXES */
+
+
+/*------------------------------------*\
+   END COMPARE CSS
+\*------------------------------------*/
+
+
+/* LOCAL FIXES */
+.tile .tile-card-title {
+    top: 0;
+}
+@media (max-width:734px) {
+	.tile .tile-card-title {
+    	top: 40px;
+	}
+}
+
+/*------------------------------------*\
+   CONSIDER CSS
+\*------------------------------------*/
+
+
+/* SCREENS */
+/* LOCAL FIXES */
+
+.tile-overlay-copy .feature-availability {
+    margin-top: 32px;
+    color: #6e6e73;
+}
+
+@media only screen and (max-width: 1068px) {
+    .tile-overlay-copy .feature-availability {
+        margin-top: 20px;
+    }
+}
+
+.tile-overlay-copy .feature-availability > span {
+    display: inline-block;
+}
+
+.tile-overlay-copy .feature-availability a {
+    color: inherit;
+}
+
+.typography-overlay-subcopy {
+    font-size: 17px;
+    line-height: 1.2353641176;
+    font-weight: 600;
+    letter-spacing: -0.014em;
+    font-family:SF Pro Text, SF Pro Icons, Helvetica Neue, Helvetica, Arial, sans-serif
+}
+
+@media only screen and (max-width: 734px) {
+    .typography-overlay-subcopy {
+        font-size: 14px;
+        line-height: 1.2857742857;
+        font-weight: 600;
+        letter-spacing: -0.016em;
+        font-family:SF Pro Text, SF Pro Icons, Helvetica Neue, Helvetica, Arial, sans-serif
+    }
+}
+
+@media only screen and (max-width: 734px) {
+   #scroll-gallery-item-2 figure{
+      top: 60%;
+   }
+}
+
+/*------------------------------------*\
+   END CONSIDER CSS
+\*------------------------------------*/
+/*------------------------------------*\
+   FOOTNOTES CSS
+\*------------------------------------*/
+
+
+/* SCREENS */
+
+/* LOCAL FIXES */
+
+
+
+
+/*------------------------------------*\
+   END FOOTNOTES CSS
+\*------------------------------------*/

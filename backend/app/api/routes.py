@@ -6,7 +6,6 @@ from app.core.auth import get_current_user_id
 from app.db.session import get_db
 from app.models.company_profile import CompanyProfile
 from app.models.draft_document import DraftDocument
-from app.models.monthly_report import MonthlyReport
 from app.models.opportunity_workflow import OpportunityWorkflow
 from app.models.match_result_v2 import MatchResultV2
 from app.models.profile_capability import ProfileCapability
@@ -20,21 +19,13 @@ from app.schemas.api import (
     TopicOut,
     TopicDetailOut,
     MatchOut,
-    ReportOut,
     DraftOut,
     TopicFitOut,
-    ReportDraftItemOut,
-    BrokerageEventOut,
-    DeadlineAlertOut,
-    ReportAssistantQueryIn,
-    ReportAssistantOut,
-    FitAssistantQueryIn,
-    FitAssistantOut,
     WorkProgrammeTextIn,
     DashboardOverviewOut,
-    DecisionReportOut,
     OpportunityWorkflowUpsertIn,
     OpportunityWorkflowOut,
+    DecisionReportOut,
     MatchRecomputeV2In,
     MatchRecomputeV2Out,
     ProfileCapabilityIn,
@@ -45,8 +36,6 @@ from app.schemas.api import (
     MatchExplanationV2Out,
     TopicDecisionCardV2Out,
 )
-from app.services.report_assistant_service import answer_report_query
-from app.services.fit_assistant_service import answer_fit_query
 from app.services.draft_hunter_service import run_draft_hunter
 from app.services.ingestion_service import ingest_calls
 from app.services.matching_service import recompute_matches
@@ -54,20 +43,12 @@ from app.services.embedding_service import EmbeddingService
 from app.services.matching_v2_service import (
     build_topic_decision_card_v2,
     ensure_v2_schema,
-    GroqRateLimitError,
     get_match_explanation_v2,
     list_matches_v2,
     recompute_matches_v2,
 )
 from app.services.dashboard_service import compute_dashboard_overview, generate_decision_report
 from app.services.dashboard_v2_service import compute_dashboard_overview_v2, generate_decision_report_v2
-from app.services.report_service import (
-    collect_brokerage_report_items,
-    collect_deadline_alert_items,
-    collect_draft_report_items,
-    generate_monthly_report,
-    generate_web_report,
-)
 from app.services.file_extract_service import extract_text_from_upload
 from app.services.work_programme_pdf_service import ingest_work_programme_pdf, ingest_work_programme_text
 
@@ -273,89 +254,6 @@ def trigger_draft_hunter(db: Session = Depends(get_db)):
     return run_draft_hunter(db)
 
 
-@router.post('/reports/monthly', response_model=ReportOut)
-def trigger_report(
-    month: str | None = None,
-    db: Session = Depends(get_db),
-    current_user_id: str = Depends(get_current_user_id),
-):
-    return generate_monthly_report(db, month=month, user_id=current_user_id)
-
-
-@router.post('/reports/drafts/run', response_model=ReportOut)
-def trigger_draft_report(
-    month: str | None = None,
-    db: Session = Depends(get_db),
-    current_user_id: str = Depends(get_current_user_id),
-):
-    return generate_web_report(db, report_kind='drafts', month=month, user_id=current_user_id)
-
-
-@router.get('/reports/drafts/items', response_model=list[ReportDraftItemOut])
-def list_draft_report_items(current_user_id: str = Depends(get_current_user_id)):
-    _ = current_user_id
-    return collect_draft_report_items()
-
-
-@router.post('/reports/brokerage/run', response_model=ReportOut)
-def trigger_brokerage_report(
-    month: str | None = None,
-    db: Session = Depends(get_db),
-    current_user_id: str = Depends(get_current_user_id),
-):
-    return generate_web_report(db, report_kind='brokerage', month=month, user_id=current_user_id)
-
-
-@router.get('/reports/brokerage/items', response_model=list[BrokerageEventOut])
-def list_brokerage_report_items(current_user_id: str = Depends(get_current_user_id)):
-    _ = current_user_id
-    return collect_brokerage_report_items()
-
-
-@router.post('/reports/alerts/run', response_model=ReportOut)
-def trigger_alert_report(
-    month: str | None = None,
-    db: Session = Depends(get_db),
-    current_user_id: str = Depends(get_current_user_id),
-):
-    return generate_web_report(db, report_kind='alerts', month=month, user_id=current_user_id)
-
-
-@router.get('/reports/alerts/items', response_model=list[DeadlineAlertOut])
-def list_alert_report_items(current_user_id: str = Depends(get_current_user_id)):
-    _ = current_user_id
-    return collect_deadline_alert_items()
-
-
-@router.post('/reports/assistant/query', response_model=ReportAssistantOut)
-def report_assistant_query(
-    payload: ReportAssistantQueryIn,
-    current_user_id: str = Depends(get_current_user_id),
-):
-    _ = current_user_id
-    result = answer_report_query(payload.query)
-    return {'answer': result.answer, 'sources': result.sources}
-
-
-@router.post('/fit/assistant/query', response_model=FitAssistantOut)
-def fit_assistant_query(
-    payload: FitAssistantQueryIn,
-    current_user_id: str = Depends(get_current_user_id),
-):
-    _ = current_user_id
-    result = answer_fit_query(payload.model_dump())
-    return {'answer': result.answer, 'mode': result.mode, 'cached': result.cached, 'sources': result.sources}
-
-
-@router.get('/reports/monthly', response_model=list[ReportOut])
-def list_reports(db: Session = Depends(get_db), current_user_id: str = Depends(get_current_user_id)):
-    return db.scalars(
-        select(MonthlyReport)
-        .where(MonthlyReport.user_id == current_user_id)
-        .order_by(MonthlyReport.created_at.desc())
-    ).all()
-
-
 @router.get('/drafts', response_model=list[DraftOut])
 def list_drafts(db: Session = Depends(get_db), current_user_id: str = Depends(get_current_user_id)):
     _ = current_user_id
@@ -436,15 +334,12 @@ def recompute_matches_v2_route(
     if profile.user_id != current_user_id:
         raise HTTPException(status_code=403, detail='Forbidden profile')
 
-    try:
-        return recompute_matches_v2(
-            db=db,
-            profile_id=payload.profile_id,
-            model_version=payload.model_version,
-            limit_topics=payload.limit_topics,
-        )
-    except GroqRateLimitError as exc:
-        raise HTTPException(status_code=429, detail=str(exc)) from exc
+    return recompute_matches_v2(
+        db=db,
+        profile_id=payload.profile_id,
+        model_version=payload.model_version,
+        limit_topics=payload.limit_topics,
+    )
 
 
 @router.post('/v2/profiles/{profile_id}/capabilities', response_model=ProfileCapabilityOut)
@@ -731,8 +626,8 @@ def topic_fit(
     text = f"{topic.title} {topic.scope or ''}".lower() if topic else ''
     if 'pilot' in text or 'demonstration' in text:
         suggestions.append('Industrial end-user / pilot site')
-    if 'ai' in text or 'digital' in text:
-        suggestions.append('AI/data platform provider')
+    if 'digital' in text:
+        suggestions.append('Data platform provider')
     if 'regulation' in text or 'ethic' in text:
         suggestions.append('Policy/regulatory specialist')
     if not suggestions:

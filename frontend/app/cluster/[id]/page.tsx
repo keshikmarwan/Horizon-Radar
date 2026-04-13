@@ -71,7 +71,7 @@ type TopicDecisionCardPreview = {
   suggestedActions: string[];
 };
 
-const FIT_MODEL_VERSION = 'v2-groq-fit';
+const FIT_MODEL_VERSION = 'v2-sprint1';
 const FIT_OVERLAY_MIN_AFTER_OUTCOME_MS = 15000;
 const FIT_STREAM_EVENT = 'horizon-fit-stream';
 
@@ -316,7 +316,7 @@ export default function ClusterPage() {
         lines: [
           `Profilo #${createdProfile.id} creato.`,
           `Work Programme acquisito (${cluster.fileText.length} caratteri).`,
-          'Invio a Groq per scoring fit...',
+          'Esecuzione scoring fit...',
         ],
       });
 
@@ -333,9 +333,6 @@ export default function ClusterPage() {
           `Topic valutati: ${recompute.evaluated_topics}`,
           `Match prodotti: ${recompute.matches_inserted}`,
           `Scartati da hard filter: ${recompute.matches_skipped_by_hard_filters}`,
-          recompute.groq_coverage_total && recompute.groq_coverage_count !== undefined
-            ? `Groq coverage: ${recompute.groq_coverage_count}/${recompute.groq_coverage_total}${recompute.groq_coverage_pct != null ? ` (${Math.round(recompute.groq_coverage_pct)}%)` : ''}`
-            : 'Groq coverage: n/d',
         ],
         topics: (recompute.top_topics || []).slice(0, 4).map((t) => ({
           id: t.topic_db_id,
@@ -414,7 +411,7 @@ export default function ClusterPage() {
         recommendation,
         explanation: [
           `Fit calcolato su ${mapped.length} topic ufficiali del Work Programme.`,
-          `Metodo V2-Groq: hard filters + retrieval semantico + scoring e razionale guidati da Groq.`,
+          'Metodo V2: hard filters + retrieval semantico + scoring deterministico.',
         ],
         gaps: mapped.flatMap((m) => m.mustHaveGaps).slice(0, 8),
         semanticScore: avg,
@@ -499,11 +496,6 @@ export default function ClusterPage() {
     onAcceptFitOutcome();
   };
 
-  const onOpenReportFromOutcome = () => {
-    window.open('/reports', '_blank', 'noopener,noreferrer');
-    onAcceptFitOutcome();
-  };
-
   const onRecomputeFromOutcome = () => {
     setFitClosingExit(true);
     window.setTimeout(() => {
@@ -527,9 +519,12 @@ export default function ClusterPage() {
 
   if (!cluster) {
     return (
-      <section>
-        <h1>{clusterId}</h1>
-        <div className="card">
+      <section className="apple-detail-page pipeline-page">
+        <header className="apple-detail-hero">
+          <p className="apple-detail-kicker">Pipeline</p>
+          <h1>{clusterId}</h1>
+        </header>
+        <div className="card apple-detail-panel">
           <h3>Istanze Workspace Call</h3>
           <div className="row">
             <button onClick={saveInstance}>Salva</button>
@@ -551,13 +546,29 @@ export default function ClusterPage() {
   }
 
   return (
-    <section>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>{clusterId} - Fit Workspace</h1>
-        <Link href="/">Back to uploads</Link>
+    <section className="pipeline-page">
+      <div className="pipeline-hero">
+        <div className="pipeline-hero-top">
+          <p className="pipeline-hero-kicker">Pipeline</p>
+          <h1 className="pipeline-hero-headline">{clusterId} Fit Workspace</h1>
+          <p className="pipeline-hero-subtitle">Valutazione, decisioni e execution in un’unica vista operativa.</p>
+          <div className="pipeline-hero-links">
+            <Link className="pipeline-hero-link" href="/">Back to uploads</Link>
+            <a className="pipeline-hero-link" href="#fit-workbench">Vai al fit</a>
+          </div>
+        </div>
+        <div className="pipeline-hero-media">
+          <div
+            className="pipeline-hero-image"
+            style={{
+              backgroundImage: 'url(/images/IDG_GBionics_render_021_rK-sZdFO9s-rgTKZOlOl6.jpg)',
+            }}
+          />
+          <div className="pipeline-hero-vignette" />
+        </div>
       </div>
 
-      <div className="card">
+      <div className="pipeline-section">
         <h3>Istanze Workspace Call</h3>
         <div className="row">
           <button onClick={saveInstance}>Salva</button>
@@ -573,7 +584,7 @@ export default function ClusterPage() {
         </div>
       </div>
 
-      <div className="card">
+      <div className="pipeline-section">
         <p><strong>File:</strong> {cluster.fileName}</p>
         <p className="small"><strong>Type:</strong> {cluster.fileType || 'unknown'}</p>
         <p className="small"><strong>Upload:</strong> {cluster.uploadedAt ? new Date(cluster.uploadedAt).toLocaleString() : 'n/d'}</p>
@@ -593,7 +604,7 @@ export default function ClusterPage() {
         ) : null}
       </div>
 
-      <div className="card">
+      <div className="pipeline-section" id="fit-workbench">
         <h3>Profilo Azienda (per {clusterId})</h3>
         <label>Descrizione azienda (usata per semantic fit)</label>
         <textarea
@@ -613,7 +624,7 @@ export default function ClusterPage() {
         />
       </div>
 
-      <div className="card">
+      <div className="pipeline-section">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h3>Fit Analysis</h3>
           <button onClick={() => { void runBackendFit(); }} disabled={!canFit || fitLoading}>
@@ -621,13 +632,13 @@ export default function ClusterPage() {
           </button>
         </div>
         <p className="small">
-          Metodo fit: parsing Work Programme + hard filters + retrieval semantico + scoring Groq (`{FIT_MODEL_VERSION}`).
+          Metodo fit: parsing Work Programme + hard filters + retrieval semantico + scoring deterministico (`{FIT_MODEL_VERSION}`).
         </p>
         {!fitStarted ? <p className="small">Premi "Avvia Fit" per estrarre call ufficiali e calcolare la classifica fit.</p> : null}
         {fitError ? <p className="small">{fitError}</p> : null}
       </div>
 
-      <div className="card">
+      <div className="pipeline-section">
         <h3>Fit Analysis (Overall Cluster)</h3>
         {!canFit ? (
           <p className="small">Compila descrizione e interessi per attivare il fit.</p>
@@ -645,7 +656,7 @@ export default function ClusterPage() {
         )}
       </div>
 
-      <div className="card">
+      <div className="pipeline-section">
         <h3>Top 20 Call (Schede)</h3>
         {!canFit ? (
           <p className="small">Compila descrizione/interessi per calcolare il ranking call.</p>
@@ -654,9 +665,9 @@ export default function ClusterPage() {
         ) : topicFits.length === 0 ? (
           <p className="small">Nessuna call identificata nel file. Verifica che il testo estratto non sia vuoto.</p>
         ) : (
-          <div className="row" style={{ alignItems: 'stretch' }}>
+          <div className="row pipeline-topic-grid" style={{ alignItems: 'stretch' }}>
             {topicFits.map((t, idx) => (
-              <article key={`${t.topicTitle}-${idx}`} className="card" style={{ flex: 1, minWidth: 320 }}>
+              <article key={`${t.topicTitle}-${idx}`} className="pipeline-topic-card" style={{ flex: 1, minWidth: 320 }}>
                 <h4>#{idx + 1} - {t.topicTitle.slice(0, 90)}</h4>
                 <p><strong>Overall fit:</strong> {Math.round(t.overallFit)}/100</p>
                 <p><strong>Gap:</strong> {Math.round(t.gapScore)}/100 | <strong>Readiness:</strong> {Math.round(t.readinessScore)}/100</p>
@@ -674,7 +685,7 @@ export default function ClusterPage() {
 
       {fitLoading ? (
         <div
-          className={`fit-loading-overlay${fitBooting ? ' is-booting' : ''}${fitFinishing ? ' is-finishing' : ''}${fitClosingExit ? ' is-closing' : ''}`}
+          className={`fit-loading-overlay${fitBooting ? ' is-booting' : ''}${fitFinishing ? ' is-finishing' : ''}${fitClosing ? ' is-outcome' : ''}${fitClosingExit ? ' is-closing' : ''}`}
           aria-live="polite"
           aria-label="Fit loading animation"
         >
@@ -688,7 +699,6 @@ export default function ClusterPage() {
                 <p className="small">Top call valutate: {topicFits.length}</p>
                 <div className="fit-outcome-actions">
                   <button onClick={onOpenTopCallFromOutcome}>Apri Top Call</button>
-                  <button onClick={onOpenReportFromOutcome}>Apri Report</button>
                   <button onClick={onRecomputeFromOutcome}>Ricalcola</button>
                   <button onClick={onAcceptFitOutcome}>Continua</button>
                 </div>

@@ -1,0 +1,405 @@
+/* ── FONTS ────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Clash Grotesk Variable';
+  font-style: normal;
+  font-weight: 200 700;
+  src: url('assets/ClashGrotesk-Variable_dRpsqk3eAMHECObb2T0Bu.ttf') format('truetype');
+}
+
+/* ── BASE ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --white:         rgb(255 255 255 / 1);
+  --white-2:       rgb(255 255 255 / .8);
+  --muted:         rgb(255 255 255 / .6);
+  --border:        rgb(255 255 255 / .15);
+  --accent:        rgb(212 0 0 / 1);
+  --black:         rgb(0 0 0 / 1);
+  --glass:         rgb(255 255 255 / .05);
+  --dark-glass:    rgb(0 0 0 / .27);
+  --bright-glass:  rgb(255 255 255 / .45);
+  --glass-blur:    10px;
+  --font:          'Clash Grotesk Variable', system-ui, sans-serif;
+  --max-width:     75rem;
+  --space:         5rem;
+}
+
+html { font-size: 16px; }
+
+body {
+  background-color: #000;
+  background-image: linear-gradient(rgb(0 0 0 / .7) 0%, rgb(0 0 0 / .7) 100%),
+                    url('assets/IDG_GBionics_render_026_TkH2UIYZ7zAcW-aT1nlWQ.jpg');
+  background-size: auto 120dvh;
+  background-position: 50% 100%;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: var(--muted);
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--white); text-decoration: none; }
+a:hover { color: var(--white); }
+
+/* ── NAV ──────────────────────────────────────────────────── */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.75rem 3rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 50;
+}
+
+nav .logo-link {
+  display: flex;
+  align-items: center;
+}
+
+nav .logo-img {
+  height: 2.75rem;
+  width: 2.75rem;
+  max-width: 2.75rem;
+  max-height: 2.75rem;
+  display: block;
+  object-fit: contain;
+  transition: filter .2s;
+}
+
+nav .logo-link:hover .logo-img {
+  filter: brightness(.75);
+}
+
+nav .back-link {
+  font-size: .85rem;
+  color: var(--muted);
+  border-bottom: 2px dotted transparent;
+  transition: color .2s, border-color .2s;
+  padding-bottom: 2px;
+}
+
+nav .back-link:hover {
+  color: var(--white);
+  border-bottom-color: var(--white);
+}
+
+/* ── JOB PAGE ─────────────────────────────────────────────── */
+.job-page {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 8rem 3rem 8rem;
+}
+
+.job-header {
+  margin-bottom: 3.5rem;
+}
+
+.job-header h1 {
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--white);
+  letter-spacing: -.01em;
+  margin-bottom: 1rem;
+  line-height: 1.25;
+}
+
+.job-meta {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  font-size: .95rem;
+  color: var(--muted);
+}
+
+.job-meta .location::before { content: 'Location: '; color: var(--muted); }
+.job-meta .contract::before { content: 'Contract: '; color: var(--muted); }
+
+.job-code { display: none; }
+
+/* ── SECTIONS ─────────────────────────────────────────────── */
+.job-page section {
+  margin-bottom: 2.5rem;
+}
+
+.job-page section h2 {
+  font-size: .95rem;
+  font-weight: 400;
+  color: var(--white);
+  margin-bottom: .75rem;
+  line-height: 1.25;
+}
+
+.job-page section p {
+  font-size: .95rem;
+  color: var(--muted);
+  line-height: 1.75;
+  white-space: pre-line;
+}
+
+/* ── APPLY BUTTON ─────────────────────────────────────────── */
+.apply-wrap {
+  margin-top: 3rem;
+}
+
+.apply-btn {
+  display: inline-block;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--white);
+  font-family: var(--font);
+  font-size: 1.5rem;
+  font-weight: 400;
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color .2s, border-color .2s;
+}
+
+.apply-btn::before {
+  content: '> ';
+}
+
+.apply-btn:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ── APPLY OVERLAY ────────────────────────────────────────── */
+.apply-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgb(0 0 0 / .75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.apply-overlay.is-open {
+  display: flex;
+}
+
+.apply-overlay.fade-out {
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+
+.apply-dialog {
+  background: rgb(15 15 15 / .95);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 40rem;
+  max-height: 90dvh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.apply-dialog-close {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.25rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: color .2s;
+}
+
+.apply-dialog-close:hover { color: var(--white); }
+
+/* ── JOBS LIST ────────────────────────────────────────────── */
+.jobs-list {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 8rem 3rem 8rem;
+}
+
+.jobs-list h1 {
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--white);
+  margin-bottom: .5rem;
+}
+
+.jobs-list .subtitle {
+  font-size: .95rem;
+  color: var(--muted);
+  margin-bottom: 3rem;
+}
+
+/* ── JOB CATEGORIES ───────────────────────────────────────── */
+.job-category {
+  margin-bottom: 3rem;
+}
+
+.category-title {
+  font-size: .75rem;
+  font-weight: 400;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0;
+  padding-bottom: .75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.job-category .job-card:first-of-type {
+  border-top: none;
+}
+
+/* ── JOB CARDS ────────────────────────────────────────────── */
+.job-card {
+  display: block;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--border);
+  color: var(--white);
+  transition: color .2s;
+}
+
+.job-card:last-child { border-bottom: 1px solid var(--border); }
+
+.job-card:hover { color: var(--white); }
+
+.job-card:hover h2 {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.job-card .job-code {
+  display: block;
+  font-size: .75rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: .35rem;
+}
+
+.job-card h2 {
+  font-size: 1rem;
+  font-weight: 400;
+  margin-bottom: .35rem;
+  color: var(--white);
+}
+
+.job-card p {
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+/* ── 404 ──────────────────────────────────────────────────── */
+.not-found {
+  max-width: var(--max-width);
+  margin: 8rem auto;
+  padding: 0 3rem;
+}
+
+.not-found h1 {
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--white);
+  margin-bottom: 1rem;
+}
+
+/* ── RESPONSIVE ───────────────────────────────────────────── */
+@media (max-width: 767px) {
+  nav { padding: 1.75rem 1.5rem; }
+  .job-page, .jobs-list { padding: 6rem 1.5rem 5rem; }
+  .apply-dialog { padding: 2rem 1.25rem; }
+}
+
+/* ── FOOTER ───────────────────────────────────────────────── */
+.site-footer {
+  background-color: #000;
+}
+
+.footer-inner {
+  padding: 2rem 3rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.footer-left {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+.footer-brand {
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--white);
+}
+
+.footer-links {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  font-family: var(--font);
+  font-size: .6rem;
+  font-weight: 400;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--white);
+  transition: color .2s;
+}
+
+.footer-links a:hover {
+  color: var(--muted);
+}
+
+.footer-right {
+  text-align: right;
+  font-family: var(--font);
+  font-size: .8rem;
+  font-weight: 400;
+  color: var(--white);
+  line-height: 1.6;
+}
+
+.footer-right a {
+  color: var(--white);
+  text-decoration: none;
+  transition: color .2s;
+}
+
+.footer-right a:hover {
+  color: var(--muted);
+}
+
+.footer-vat {
+  margin-top: .25rem;
+  font-family: var(--font);
+  font-size: .8rem;
+  font-weight: 400;
+  color: var(--white);
+}
+
+@media (max-width: 767px) {
+  .footer-inner { flex-direction: column; gap: 1.5rem; padding: 2rem 1.5rem 1rem; }
+  .footer-right { text-align: left; }
+}

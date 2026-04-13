@@ -1,0 +1,39 @@
+/*------------------------------------*\
+   LOCAL SCREENS
+\*------------------------------------*/
+
+
+
+
+
+
+/*------------------------------------*\
+   END LOCAL SCREENS
+\*------------------------------------*/
+
+
+
+
+/*------------------------------------*\
+   LOCAL FIXES
+\*------------------------------------*/
+
+
+.compare-module-wrapper .device-content h3 {
+    min-height: 64px;
+}
+@media only screen and (max-width: 1068px) {
+	.compare-module-wrapper .device-content h3 {
+		min-height: 64px;
+	}
+}
+@media only screen and (max-width: 734px) {
+	.compare-module-wrapper .device-content h3 {
+		min-height: 46pxpx;
+	}
+}
+
+
+/*------------------------------------*\
+   END LOCAL FIXES
+\*------------------------------------*/ 

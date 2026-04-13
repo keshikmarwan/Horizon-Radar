@@ -1,0 +1,23 @@
+.main .as-container-column.as-banner.as-banner--top {
+  margin-top: 0; }
+  @media only screen and (max-width: 1068px) {
+    .main .as-container-column.as-banner.as-banner--top {
+      margin-top: 0; } }
+  @media only screen and (max-width: 734px) {
+    .main .as-container-column.as-banner.as-banner--top {
+      margin-top: 0; } }
+
+.main .as-container-column.as-banner.as-banner--top .as-banner-image--top {
+  margin-top: 0; }
+  @media only screen and (max-width: 1068px) {
+    .main .as-container-column.as-banner.as-banner--top .as-banner-image--top {
+      margin-top: 0; } }
+  @media only screen and (max-width: 734px) {
+    .main .as-container-column.as-banner.as-banner--top .as-banner-image--top {
+      margin-top: 0; } }
+
+.main .as-localnav ~ .as-banner.as-banner--top {
+  margin-top: -52px; }
+  @media only screen and (max-width: 734px) {
+    .main .as-localnav ~ .as-banner.as-banner--top {
+      margin-top: -48px; } }

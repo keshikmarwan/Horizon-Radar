@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 
 export function Header() {
   const pathname = usePathname();
@@ -10,36 +11,39 @@ export function Header() {
     { href: '/', label: 'Overview' },
     { href: '/cluster/CL1', label: 'Pipeline' },
     { href: '/profiles', label: 'Profiles' },
-    { href: '/reports', label: 'Reports' },
     { href: '/call-viewer', label: 'Call Viewer' },
   ];
 
-  const logout = () => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.removeItem('horizon-radar-auth-v1');
+  const logout = async () => {
+    await signOut({ redirect: false });
     window.location.reload();
   };
 
   return (
-    <header className="header">
-      <Link className="brand" href="/">
-        <Image src="/images/logo.png" alt="Horizon Radar Logo" width={42} height={42} />
-      </Link>
-      <nav aria-label="Main navigation">
-        {links.map((link) => {
-          const isHome = link.href === '/';
-          const isActive = isHome ? pathname === '/' : pathname === link.href || pathname.startsWith(`${link.href}/`);
-          const activeClass = isActive ? 'header-link active' : 'header-link';
-          return (
-            <Link key={link.href} className={activeClass} href={link.href}>
-              {link.label}
-            </Link>
-          );
-        })}
-        <button className="header-link" type="button" onClick={logout} aria-label="Logout">
-          Logout
-        </button>
-      </nav>
-    </header>
+    <>
+      <div className="apple-info-strip">Horizon Radar Workspace</div>
+      <header className="apple-shell-header">
+        <nav className="apple-shell-nav" aria-label="Main navigation">
+          <Link className="apple-shell-brand" href="/" aria-label="Horizon Radar Home">
+            <Image src="/images/logo.png" alt="Horizon Radar Logo" width={28} height={28} />
+          </Link>
+          <div className="apple-shell-links">
+            {links.map((link) => {
+              const isHome = link.href === '/';
+              const isActive = isHome ? pathname === '/' : pathname === link.href || pathname.startsWith(`${link.href}/`);
+              const activeClass = isActive ? 'apple-shell-link active' : 'apple-shell-link';
+              return (
+                <Link key={link.href} className={activeClass} href={link.href}>
+                  {link.label}
+                </Link>
+              );
+            })}
+          </div>
+          <button className="apple-shell-link apple-shell-logout" type="button" onClick={logout} aria-label="Logout">
+            Logout
+          </button>
+        </nav>
+      </header>
+    </>
   );
 }

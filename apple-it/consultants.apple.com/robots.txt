@@ -1,0 +1,8 @@
+# robots.txt for https://consultants.apple.com/
+
+User-agent: *
+Disallow: /*/acceptTerms/
+Disallow: /*/applicationForm/
+Disallow: /*/writeReview/
+
+Sitemap: https://consultants.apple.com/sitemap.xml

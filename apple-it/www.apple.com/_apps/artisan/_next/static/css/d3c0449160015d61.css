@@ -1,0 +1,1 @@
+@layer sasskit{}.cards_cardLink__W1UKy{position:absolute;top:0;left:0;right:0;bottom:0;z-index:1;cursor:pointer;border-radius:var(--corner-radius);margin:0}.cards_cardLink__W1UKy:focus:not(:focus-visible){box-shadow:none;outline:none}.cards_cardLink__W1UKy:focus-visible{outline:2px solid var(--sk-focus-color,#0071e3);outline-offset:var(--sk-focus-offset,1px)}

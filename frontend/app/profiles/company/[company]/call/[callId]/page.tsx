@@ -120,19 +120,25 @@ export default function CompanyCallDetailPage() {
 
   if (!call) {
     return (
-      <section>
-        <h1>Call non trovata</h1>
+      <section className="apple-detail-page profiles-company-call-page">
+        <header className="apple-detail-hero">
+          <p className="apple-detail-kicker">Call Viewer</p>
+          <h1>Call non trovata</h1>
+        </header>
         <Link href={`/profiles/company/${companyParam}`}>Torna alla scheda azienda</Link>
       </section>
     );
   }
 
   return (
-    <section>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>{call.title}</h1>
-        <Link href={`/profiles/company/${companyParam}`}>Torna alla scheda azienda</Link>
-      </div>
+    <section className="apple-detail-page profiles-company-call-page">
+      <header className="apple-detail-hero">
+        <p className="apple-detail-kicker">Call Viewer</p>
+        <div className="row" style={{ justifyContent: 'space-between' }}>
+          <h1>{call.title}</h1>
+          <Link href={`/profiles/company/${companyParam}`}>Torna alla scheda azienda</Link>
+        </div>
+      </header>
 
       <div className="card">
         <p><strong>Stato:</strong></p>

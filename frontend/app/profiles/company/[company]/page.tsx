@@ -251,11 +251,14 @@ export default function CompanyDetailPage() {
   };
 
   return (
-    <section>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>Scheda Azienda: {companyName}</h1>
-        <Link href="/profiles">Torna a Profiles</Link>
-      </div>
+    <section className="apple-detail-page profiles-company-page">
+      <header className="apple-detail-hero">
+        <p className="apple-detail-kicker">Profiles</p>
+        <div className="row" style={{ justifyContent: 'space-between' }}>
+          <h1>Scheda Azienda: {companyName}</h1>
+          <Link href="/profiles">Torna a Profiles</Link>
+        </div>
+      </header>
 
       <div className="card">
         <h3>Tag azienda</h3>

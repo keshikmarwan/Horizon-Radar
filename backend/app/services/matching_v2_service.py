@@ -1,17 +1,12 @@
 from __future__ import annotations
 
-import json
-import logging
-import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, TypeVar
+from typing import Any
 
-import httpx
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
 from app.db.session import engine
 from app.models.company_profile import CompanyProfile
 from app.models.match_explanation_v2 import MatchExplanationV2
@@ -22,24 +17,11 @@ from app.models.topic import Topic
 from app.models.topic_section import TopicSection
 from app.services.embedding_service import EmbeddingService
 
-settings = get_settings()
-logger = logging.getLogger(__name__)
-
-_GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
-_GROQ_MODEL = 'llama-3.3-70b-versatile'
-_GROQ_HTTP_TIMEOUT = 18.0
-_GROQ_MAX_RETRIES = 2
-_GROQ_TOTAL_BUDGET_SECONDS = 95.0
-
 
 @dataclass
 class _HardFilterResult:
     passed: bool
     reasons: list[str]
-
-
-class GroqRateLimitError(RuntimeError):
-    pass
 
 
 def _clamp_0_100(value: float) -> float:
@@ -48,211 +30,6 @@ def _clamp_0_100(value: float) -> float:
 
 def _normalized_scalar(value: float) -> float:
     return max(0.0, min(1.0, value))
-
-
-def _normalize_list(value: Any, max_items: int = 6, max_chars: int = 220) -> list[str]:
-    if not isinstance(value, list):
-        return []
-    out: list[str] = []
-    for item in value:
-        txt = str(item or '').strip()
-        if txt:
-            out.append(txt[:max_chars])
-        if len(out) >= max_items:
-            break
-    return out
-
-
-T = TypeVar('T')
-
-
-def _chunked(items: list[T], size: int) -> list[list[T]]:
-    return [items[i:i + size] for i in range(0, len(items), size)]
-
-
-def _extract_json_block(raw: str) -> dict[str, Any]:
-    cleaned = raw.strip()
-    if cleaned.startswith('```'):
-        cleaned = cleaned.strip('`')
-        if cleaned.startswith('json'):
-            cleaned = cleaned[4:].strip()
-    start = cleaned.find('{')
-    end = cleaned.rfind('}')
-    if start >= 0 and end > start:
-        cleaned = cleaned[start:end + 1]
-    parsed = json.loads(cleaned)
-    if not isinstance(parsed, dict):
-        raise ValueError('Groq response is not a JSON object')
-    return parsed
-
-
-def _is_groq_fit_model(model_version: str) -> bool:
-    return model_version.lower().strip().startswith('v2-groq')
-
-
-def _groq_fit_rerank(
-    profile: CompanyProfile,
-    candidates: list[dict[str, Any]],
-) -> dict[int, dict[str, Any]]:
-    if not settings.groq_api_key or not candidates:
-        return {}
-
-    profile_payload = {
-        'name': profile.name,
-        'description': (profile.description or '')[:900],
-        'tags': (profile.tags or [])[:24],
-        'constraints': profile.constraints or {},
-    }
-    topics_payload: list[dict[str, Any]] = []
-    for c in candidates:
-        topic: Topic = c['topic']
-        topics_payload.append(
-            {
-                'topic_db_id': topic.id,
-                'topic_id': topic.topic_id,
-                'title': topic.title,
-                'cluster': topic.cluster,
-                'action_type': topic.action_type,
-                'scope': (topic.scope or '')[:650],
-                'expected_outcomes': (topic.expected_outcomes or '')[:650],
-                'trl_min': topic.trl_min,
-                'trl_max': topic.trl_max,
-                'budget_total': float(topic.budget_total) if topic.budget_total is not None else None,
-                'deadline': topic.deadline.isoformat() if topic.deadline else None,
-                'baseline': {
-                    'overall_fit': c['overall_fit'],
-                    'thematic_fit': c['thematic_fit'],
-                    'eligibility_fit': c['eligibility_fit'],
-                    'readiness_score': c['readiness_score'],
-                    'confidence': c['confidence'],
-                    'recommendation': c['recommendation'],
-                },
-            }
-        )
-
-    prompt = {
-        'task': 'Valuta il fit Horizon Europe per ciascun topic e spiega chiaramente perché il fit avviene o non avviene. Ritorna SOLO JSON valido.',
-        'rules': [
-            'Usa scala 0..100.',
-            'Campi obbligatori per ogni topic: topic_db_id, overall_fit, thematic_fit, eligibility_fit, impact_fit, implementation_fit, consortium_fit, data_ai_fit, evidence_strength, readiness_score, gap_score, partner_dependency_score, submission_priority, confidence, recommendation, recommended_role, why_fit, why_not_fit, must_have_gaps, nice_to_have_gaps, suggested_partner_types, suggested_actions.',
-            "recommendation deve essere uno tra: go, watch, no_go.",
-            "recommended_role deve essere uno tra: coordinator, partner, watch_only.",
-            'Conserva coerenza con vincoli e baseline.',
-            "why_fit: 2-4 frasi concrete e verificabili sul motivo del fit (aderenza topic, asset aziendali, impatto atteso).",
-            "why_not_fit: 1-4 limiti concreti che frenano il fit.",
-            "must_have_gaps: solo gap bloccanti, massimo 4.",
-            "nice_to_have_gaps: solo gap migliorativi, massimo 4.",
-            "suggested_actions: 3-5 azioni operative in stile imperativo.",
-            'Scrivi i testi in italiano professionale.',
-        ],
-        'profile': profile_payload,
-        'topics': topics_payload,
-        'output_schema': {'scores': [{'topic_db_id': 0}]},
-    }
-
-    body = {
-        'model': _GROQ_MODEL,
-        'temperature': 0.15,
-        'max_tokens': 2200,
-        'response_format': {'type': 'json_object'},
-        'messages': [
-            {'role': 'system', 'content': 'Sei un evaluator esperto Horizon Europe. Output rigorosamente JSON.'},
-            {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False)},
-        ],
-    }
-
-    with httpx.Client(timeout=_GROQ_HTTP_TIMEOUT) as client:
-        response = _post_groq_with_retry(client, body)
-
-    content = response.json()['choices'][0]['message']['content']
-    parsed = _extract_json_block(content)
-    rows = parsed.get('scores')
-    if not isinstance(rows, list):
-        return {}
-
-    out: dict[int, dict[str, Any]] = {}
-    for row in rows:
-        if not isinstance(row, dict):
-            continue
-        topic_id = row.get('topic_db_id')
-        if not isinstance(topic_id, int):
-            continue
-        recommendation = str(row.get('recommendation') or '').strip().lower()
-        if recommendation not in {'go', 'watch', 'no_go'}:
-            recommendation = 'watch'
-        recommended_role = str(row.get('recommended_role') or '').strip().lower()
-        if recommended_role not in {'coordinator', 'partner', 'watch_only'}:
-            recommended_role = 'watch_only'
-        out[topic_id] = {
-            'overall_fit': _clamp_0_100(float(row.get('overall_fit', 0))),
-            'thematic_fit': _clamp_0_100(float(row.get('thematic_fit', 0))),
-            'eligibility_fit': _clamp_0_100(float(row.get('eligibility_fit', 0))),
-            'impact_fit': _clamp_0_100(float(row.get('impact_fit', 0))),
-            'implementation_fit': _clamp_0_100(float(row.get('implementation_fit', 0))),
-            'consortium_fit': _clamp_0_100(float(row.get('consortium_fit', 0))),
-            'data_ai_fit': _clamp_0_100(float(row.get('data_ai_fit', 0))),
-            'evidence_strength': _clamp_0_100(float(row.get('evidence_strength', 0))),
-            'readiness_score': _clamp_0_100(float(row.get('readiness_score', 0))),
-            'gap_score': _clamp_0_100(float(row.get('gap_score', 0))),
-            'partner_dependency_score': _clamp_0_100(float(row.get('partner_dependency_score', 0))),
-            'submission_priority': _clamp_0_100(float(row.get('submission_priority', 0))),
-            'confidence': _clamp_0_100(float(row.get('confidence', 0))),
-            'recommendation': recommendation,
-            'recommended_role': recommended_role,
-            'why_fit': _normalize_list(row.get('why_fit'), max_items=5),
-            'why_not_fit': _normalize_list(row.get('why_not_fit'), max_items=5),
-            'must_have_gaps': _normalize_list(row.get('must_have_gaps'), max_items=5),
-            'nice_to_have_gaps': _normalize_list(row.get('nice_to_have_gaps'), max_items=5),
-            'suggested_partner_types': _normalize_list(row.get('suggested_partner_types'), max_items=4, max_chars=120),
-            'suggested_actions': _normalize_list(row.get('suggested_actions'), max_items=5),
-        }
-    return out
-
-
-def _post_groq_with_retry(client: httpx.Client, body: dict[str, Any]) -> httpx.Response:
-    headers = {
-        'Authorization': f'Bearer {settings.groq_api_key}',
-        'Content-Type': 'application/json',
-    }
-    last_error: Exception | None = None
-    for attempt in range(1, _GROQ_MAX_RETRIES + 1):
-        try:
-            response = client.post(_GROQ_API_URL, json=body, headers=headers)
-        except httpx.HTTPError as exc:
-            last_error = exc
-            if attempt >= _GROQ_MAX_RETRIES:
-                break
-            time.sleep(min(2.5, 0.6 * (2 ** (attempt - 1))))
-            continue
-
-        if response.status_code == 429:
-            retry_after = response.headers.get('Retry-After')
-            retry_after_s = 0.0
-            if retry_after:
-                try:
-                    retry_after_s = float(retry_after)
-                except ValueError:
-                    retry_after_s = 0.0
-            wait_s = retry_after_s if retry_after_s > 0 else min(3.0, 0.8 * (2 ** (attempt - 1)))
-            if attempt >= _GROQ_MAX_RETRIES:
-                raise GroqRateLimitError(
-                    f'Groq rate limit reached (429) after {attempt} attempts. Wait about {int(wait_s)}s and retry.'
-                )
-            time.sleep(wait_s)
-            continue
-
-        if response.status_code in {500, 502, 503, 504}:
-            if attempt >= _GROQ_MAX_RETRIES:
-                response.raise_for_status()
-            time.sleep(min(2.2, 0.6 * (2 ** (attempt - 1))))
-            continue
-
-        response.raise_for_status()
-        return response
-
-    if last_error:
-        raise RuntimeError(f'Groq request failed: {str(last_error)}') from last_error
-    raise RuntimeError('Groq request failed without response.')
 
 
 def ensure_v2_schema() -> None:
@@ -443,9 +220,6 @@ def recompute_matches_v2(
 
     skipped = 0
     evaluated: list[dict[str, Any]] = []
-    groq_coverage_count: int | None = None
-    groq_coverage_total: int | None = None
-    groq_coverage_pct: float | None = None
 
     for topic in topics:
         hard_filter = _passes_hard_filters(profile, topic)
@@ -487,7 +261,7 @@ def recompute_matches_v2(
         if consortium_fit < 60:
             nice_to_have_gaps.append('Consortium role clarity should be improved.')
         if data_ai_fit < 60:
-            nice_to_have_gaps.append('Data/AI contribution should be strengthened.')
+            nice_to_have_gaps.append('Data contribution should be strengthened.')
 
         gap_score = _clamp_0_100((len(must_have_gaps) * 35) + (len(nice_to_have_gaps) * 12))
         readiness_score = _clamp_0_100(max(0, overall_fit - (0.5 * gap_score)))
@@ -551,93 +325,6 @@ def recompute_matches_v2(
             }
         )
 
-    if _is_groq_fit_model(model_version) and evaluated:
-        if not settings.groq_api_key:
-            raise ValueError('GROQ_API_KEY mancante: impossibile eseguire model_version v2-groq-fit.')
-
-        try:
-            groq_scores: dict[int, dict[str, Any]] = {}
-            ranked_all = sorted(evaluated, key=lambda x: x['submission_priority'], reverse=True)
-            groq_started_at = time.monotonic()
-            for batch in _chunked(ranked_all, 12):
-                if (time.monotonic() - groq_started_at) > _GROQ_TOTAL_BUDGET_SECONDS:
-                    logger.warning('Groq budget exceeded on primary pass; stopping at %s/%s.', len(groq_scores), len(ranked_all))
-                    break
-                batch_scores = _groq_fit_rerank(profile=profile, candidates=batch)
-                groq_scores.update(batch_scores)
-                time.sleep(0.22)
-
-            if not groq_scores:
-                raise RuntimeError('Groq non ha restituito score validi.')
-
-            # Recovery pass: riprova solo i topic mancanti con batch piccoli.
-            missing = [item for item in ranked_all if item['topic'].id not in groq_scores]
-            if missing:
-                for batch in _chunked(missing, 6):
-                    if (time.monotonic() - groq_started_at) > _GROQ_TOTAL_BUDGET_SECONDS:
-                        logger.warning('Groq budget exceeded on recovery pass; stopping at %s/%s.', len(groq_scores), len(ranked_all))
-                        break
-                    batch_scores = _groq_fit_rerank(profile=profile, candidates=batch)
-                    groq_scores.update(batch_scores)
-                    time.sleep(0.25)
-
-            # Final micro pass on persistent missing.
-            missing = [item for item in ranked_all if item['topic'].id not in groq_scores]
-            if missing:
-                for batch in _chunked(missing, 3):
-                    if (time.monotonic() - groq_started_at) > _GROQ_TOTAL_BUDGET_SECONDS:
-                        logger.warning('Groq budget exceeded on micro pass; stopping at %s/%s.', len(groq_scores), len(ranked_all))
-                        break
-                    batch_scores = _groq_fit_rerank(profile=profile, candidates=batch)
-                    groq_scores.update(batch_scores)
-                    time.sleep(0.28)
-
-            for item in evaluated:
-                topic_id = item['topic'].id
-                groq = groq_scores.get(topic_id)
-                if not groq:
-                    continue
-                for key in (
-                    'eligibility_fit',
-                    'thematic_fit',
-                    'impact_fit',
-                    'implementation_fit',
-                    'consortium_fit',
-                    'data_ai_fit',
-                    'evidence_strength',
-                    'overall_fit',
-                    'gap_score',
-                    'readiness_score',
-                    'partner_dependency_score',
-                    'submission_priority',
-                    'confidence',
-                ):
-                    item[key] = _clamp_0_100(float(groq[key]))
-                item['recommendation'] = groq['recommendation']
-                item['recommended_role'] = groq['recommended_role']
-                item['must_have_gaps'] = groq['must_have_gaps'] or item['must_have_gaps']
-                item['nice_to_have_gaps'] = groq['nice_to_have_gaps'] or item['nice_to_have_gaps']
-                item['why_fit'] = groq['why_fit'] or item['why_fit']
-                item['why_not_fit'] = groq['why_not_fit'] or item['why_not_fit']
-                item['suggested_partner_types'] = groq['suggested_partner_types'] or item['suggested_partner_types']
-                item['suggested_actions'] = groq['suggested_actions'] or item['suggested_actions']
-
-            covered = len(groq_scores)
-            total = len(evaluated)
-            groq_coverage_count = covered
-            groq_coverage_total = total
-            groq_coverage_pct = round((covered / total) * 100, 2) if total > 0 else None
-            if covered < total:
-                logger.warning(
-                    'Groq partial coverage: %s/%s topics. Remaining topics kept with deterministic baseline.',
-                    covered,
-                    total,
-                )
-        except GroqRateLimitError:
-            raise
-        except Exception as exc:
-            raise RuntimeError(f'Groq fit failed: {str(exc)}') from exc
-
     inserted = 0
     results: list[MatchResultV2] = []
     for item in evaluated:
@@ -691,9 +378,6 @@ def recompute_matches_v2(
         'evaluated_topics': len(topics),
         'matches_inserted': inserted,
         'matches_skipped_by_hard_filters': skipped,
-        'groq_coverage_count': groq_coverage_count,
-        'groq_coverage_total': groq_coverage_total,
-        'groq_coverage_pct': groq_coverage_pct,
         'top_topics': [
             {
                 'topic_db_id': r.topic_id,

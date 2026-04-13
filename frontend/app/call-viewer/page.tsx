@@ -46,8 +46,11 @@ export default function CallViewerPage() {
 
   if (!payload) {
     return (
-      <section>
-        <h1>Nessuna call selezionata</h1>
+      <section className="apple-detail-page call-viewer-page">
+        <header className="apple-detail-hero">
+          <p className="apple-detail-kicker">Call Viewer</p>
+          <h1>Nessuna call selezionata</h1>
+        </header>
         <p className="small">Apri una call dalla pagina cluster con "Apri testo completo (nuova scheda)".</p>
         <Link href="/">Torna alla home</Link>
       </section>
@@ -57,13 +60,21 @@ export default function CallViewerPage() {
   const { topic } = payload;
 
   return (
-    <section>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>Call #{payload.rank} - {payload.clusterId}</h1>
-        <Link href={`/cluster/${payload.clusterId}`}>Torna al cluster</Link>
+    <section className="apple-detail-page call-viewer-page">
+      <header className="apple-detail-hero">
+        <p className="apple-detail-kicker">Call Viewer</p>
+        <div className="row" style={{ justifyContent: 'space-between' }}>
+          <h1>Call #{payload.rank} - {payload.clusterId}</h1>
+          <Link href={`/cluster/${payload.clusterId}`}>Torna al cluster</Link>
+        </div>
+      </header>
+
+      <div className="card apple-detail-panel">
+        <h3>Panoramica</h3>
+        <p className="small">Generata il {new Date(payload.generatedAt).toLocaleString('it-IT')}.</p>
       </div>
 
-      <div className="card">
+      <div className="card apple-detail-panel">
         <h3>{topic.topicTitle}</h3>
         <p><strong>Overall fit:</strong> {Math.round(topic.overallFit)}/100</p>
         <p><strong>Gap:</strong> {Math.round(topic.gapScore)}/100 | <strong>Readiness:</strong> {Math.round(topic.readinessScore)}/100</p>
@@ -75,7 +86,7 @@ export default function CallViewerPage() {
         <p><strong>Partner suggeriti:</strong> <span className="small">{topic.suggestedPartnerTypes.join(', ') || 'n/d'}</span></p>
       </div>
 
-      <div className="card">
+      <div className="card apple-detail-panel">
         <h3>Evidenze e Gap</h3>
         <p><strong>Why fit:</strong></p>
         <ul>{topic.whyFit.map((line, idx) => <li key={`wf-${idx}`}>{line}</li>)}</ul>

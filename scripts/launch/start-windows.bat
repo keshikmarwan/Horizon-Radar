@@ -40,18 +40,14 @@ if /I "%PY_BIN%"=="py.exe" (
 
 if not exist "%RUNTIME_DIR%" mkdir "%RUNTIME_DIR%"
 if not exist "%RUNTIME_DIR%\logs" mkdir "%RUNTIME_DIR%\logs"
-if not exist "%RUNTIME_DIR%\reports" mkdir "%RUNTIME_DIR%\reports"
 if not exist "%RUNTIME_DIR%\snapshots" mkdir "%RUNTIME_DIR%\snapshots"
 if not exist "%BACKEND_DIR%\data" mkdir "%BACKEND_DIR%\data"
 
 (
   echo DATABASE_URL=sqlite:///./data/horizonradar.db
   echo REDIS_URL=redis://localhost:6379/0
-  echo OPENAI_API_KEY=
-  echo EMBEDDING_PROVIDER=local
-  echo EMBEDDING_MODEL=text-embedding-3-small
+  echo EMBEDDING_DIMENSION=384
   echo SNAPSHOT_DIR=../runtime/snapshots
-  echo REPORT_DIR=../runtime/reports
   echo SMTP_HOST=
   echo SMTP_PORT=587
   echo SMTP_USER=
@@ -65,6 +61,8 @@ if not exist "%BACKEND_DIR%\data" mkdir "%BACKEND_DIR%\data"
   echo NEXT_PUBLIC_DEMO_USER_ID=demo-user
   echo AUTH_SECRET=devsecret
   echo AUTH_URL=http://localhost:%FRONTEND_PORT%
+  echo ADMIN_USERNAME=admin
+  echo ADMIN_PASSWORD=admin123
   echo STRIPE_SECRET_KEY=
   echo STRIPE_WEBHOOK_SECRET=
 ) > "%FRONTEND_DIR%\.env.local"
@@ -99,8 +97,7 @@ if errorlevel 1 (
 echo Inizializzo DB e dati demo...
 set "DATABASE_URL=sqlite:///./data/horizonradar.db"
 set "REDIS_URL=redis://localhost:6379/0"
-set "EMBEDDING_PROVIDER=local"
-set "OPENAI_API_KEY="
+set "EMBEDDING_DIMENSION=384"
 call .venv\Scripts\python.exe scripts\init_db.py
 if errorlevel 1 (
   popd
@@ -136,7 +133,7 @@ if not exist "%FRONTEND_DIR%\node_modules" (
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr :%BACKEND_PORT% ^| findstr LISTENING') do taskkill /F /PID %%a >nul 2>&1
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr :%FRONTEND_PORT% ^| findstr LISTENING') do taskkill /F /PID %%a >nul 2>&1
 
-start "Horizon Backend" cmd /k "cd /d %BACKEND_DIR% && set PYTHONPATH=%BACKEND_DIR% && set DATABASE_URL=sqlite:///./data/horizonradar.db && set REDIS_URL=redis://localhost:6379/0 && set EMBEDDING_PROVIDER=local && set OPENAI_API_KEY= && call .venv\Scripts\activate.bat && python -m uvicorn app.main:app --host %BACKEND_HOST% --port %BACKEND_PORT% --reload"
+start "Horizon Backend" cmd /k "cd /d %BACKEND_DIR% && set PYTHONPATH=%BACKEND_DIR% && set DATABASE_URL=sqlite:///./data/horizonradar.db && set REDIS_URL=redis://localhost:6379/0 && set EMBEDDING_DIMENSION=384 && call .venv\Scripts\activate.bat && python -m uvicorn app.main:app --host %BACKEND_HOST% --port %BACKEND_PORT% --reload"
 start "Horizon Frontend" cmd /k "cd /d %FRONTEND_DIR% && npm run dev -- -H 0.0.0.0 -p %FRONTEND_PORT%"
 
 echo.

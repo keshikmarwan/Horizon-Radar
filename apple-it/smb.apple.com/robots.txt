@@ -1,0 +1,7 @@
+#Using an asterisk (*) matches all crawlers except the various AdsBot crawlers, which must be named explicitly
+User-agent: *
+#Do not allow anything to crawl
+Disallow: /
+#This is used to override a disallow directive above to allow crawling of a specific directory in a disallowed directory
+Allow: /contactus/
+Allow: /business/

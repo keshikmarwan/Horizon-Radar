@@ -9,11 +9,9 @@ Horizon Radar is a SaaS-style web app to monitor Horizon Europe calls, detect dr
 - Draft Hunter pipeline for draft WP source monitoring, PDF text extraction, and version diff summary
 - Company profile CRUD with multi-profile support per user
 - Matching engine with embeddings + rule boosts/penalties + explainability snippets + go/no-go recommendation
-- Optional OpenAI embeddings (`text-embedding-3-small`) with automatic local fallback
 - Dashboard APIs for ranked topics, filtering, and topic fit detail
-- Monthly report generation: HTML + PDF summary + optional SMTP digest
-- Celery worker/beat scheduling for daily/monthly jobs
-- Next.js frontend (Dashboard, Profiles, Topic Detail, Reports)
+- Celery worker/beat scheduling for daily ingestion and draft hunter
+- Next.js frontend (Dashboard, Profiles, Topic Detail)
 - Auth.js credentials-based stub and Stripe billing stub endpoint
 - API tenant guard with `X-User-Id` header for profile/match scoped operations
 - Dockerized local deployment with Postgres (pgvector) + Redis + backend + worker + beat + frontend
@@ -21,7 +19,7 @@ Horizon Radar is a SaaS-style web app to monitor Horizon Europe calls, detect dr
 
 ## Architecture
 
-- `backend/`: API, ingestion/matching/report services, jobs, DB models, tests
+- `backend/`: API, ingestion/matching services, jobs, DB models, tests
 - `frontend/`: Next.js app router UI
 - `infra/compose/docker-compose.yml`: local full stack
 - `reference/`: asset/sorgenti di ispirazione (non runtime)
@@ -93,8 +91,6 @@ Rimuove cache/build locali (`.next`, `__pycache__`, `.pyc`, `.DS_Store`) e prepa
 
 - `POST /api/ingest`
 - `POST /api/draft-hunter`
-- `POST /api/reports/monthly`
-- `GET /api/reports/monthly`
 - `GET /api/drafts`
 - `POST /api/profiles`
 - `GET /api/profiles`
@@ -109,7 +105,6 @@ Rimuove cache/build locali (`.next`, `__pycache__`, `.pyc`, `.DS_Store`) e prepa
 Celery Beat schedule (`backend/app/tasks/celery_app.py`):
 - Daily ingestion: 03:00 UTC
 - Daily draft hunter: 04:00 UTC
-- Monthly report: day 1 at 06:00 UTC
 
 ## Environment Variables
 
@@ -119,10 +114,7 @@ Main vars:
 - `DATABASE_URL`
 - `REDIS_URL`
 - `SNAPSHOT_DIR` (default consigliato: `../runtime/snapshots`)
-- `REPORT_DIR` (default consigliato: `../runtime/reports`)
-- `OPENAI_API_KEY` (optional, current embedding is deterministic local MVP fallback)
-- `EMBEDDING_PROVIDER` (`auto` or `local`)
-- `EMBEDDING_MODEL` (default `text-embedding-3-small`)
+- `EMBEDDING_DIMENSION` (default `384`)
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM` (optional)
 - `NEXT_PUBLIC_API_URL`
 - `NEXT_PUBLIC_DEMO_USER_ID`

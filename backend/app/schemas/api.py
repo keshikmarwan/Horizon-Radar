@@ -79,18 +79,6 @@ class TopicFitOut(BaseModel):
     suggested_partner_types: list[str]
 
 
-class ReportOut(BaseModel):
-    id: int
-    user_id: str
-    report_month: str
-    html_path: str
-    pdf_path: str | None
-    summary: str
-
-    class Config:
-        from_attributes = True
-
-
 class DraftOut(BaseModel):
     id: int
     source: str
@@ -103,70 +91,6 @@ class DraftOut(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class ReportDraftItemOut(BaseModel):
-    source: str
-    title: str
-    link: str
-    file_url: str | None = None
-
-
-class BrokerageEventOut(BaseModel):
-    title: str
-    link: str
-    date: str | None = None
-    location: str | None = None
-    source: str | None = None
-
-
-class DeadlineAlertOut(BaseModel):
-    source: str
-    title: str
-    topic_id: str
-    deadline: str
-    status: str | None = None
-    link: str | None = None
-    explanation: str
-
-
-class ReportAssistantQueryIn(BaseModel):
-    query: str
-
-
-class ReportAssistantOut(BaseModel):
-    answer: str
-    sources: list[dict[str, Any]] = Field(default_factory=list)
-
-
-class FitAssistantTopCallIn(BaseModel):
-    title: str
-    overall_fit: float
-    recommendation: str | None = None
-    deadline: str | None = None
-    recommended_role: str | None = None
-    must_have_gaps: list[str] = Field(default_factory=list)
-    suggested_actions: list[str] = Field(default_factory=list)
-
-
-class FitAssistantQueryIn(BaseModel):
-    cluster_id: str
-    fit_score: float
-    recommendation: str
-    tone: str = 'executive'
-    force_refresh: bool = False
-    readiness_avg: float | None = None
-    confidence_avg: float | None = None
-    nearest_deadline: str | None = None
-    top_gaps: list[str] = Field(default_factory=list)
-    top_calls: list[FitAssistantTopCallIn] = Field(default_factory=list)
-
-
-class FitAssistantOut(BaseModel):
-    answer: str
-    mode: str | None = None
-    cached: bool = False
-    sources: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class WorkProgrammeTextIn(BaseModel):
@@ -293,9 +217,6 @@ class MatchRecomputeV2Out(BaseModel):
     evaluated_topics: int
     matches_inserted: int
     matches_skipped_by_hard_filters: int
-    groq_coverage_count: int | None = None
-    groq_coverage_total: int | None = None
-    groq_coverage_pct: float | None = None
     top_topics: list[MatchRecomputeV2TopicOut]
 
 

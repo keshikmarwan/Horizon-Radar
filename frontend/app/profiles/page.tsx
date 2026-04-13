@@ -3,8 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { companyKey, CrmContact, CrmStore, CrmTag, makeId, readCrmStore, writeCrmStore } from '@/lib/crm-store';
-import { apiPost } from '@/lib/api';
-import type { ReportAssistantResponse } from '@/lib/types';
 
 type ContactForm = {
   firstName: string;
@@ -164,10 +162,6 @@ export default function ProfilesPage() {
   const [notesFilter, setNotesFilter] = useState('');
   const [minScoreFilter, setMinScoreFilter] = useState(0);
   const [readinessFilter, setReadinessFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
-  const [copilotPrompt, setCopilotPrompt] = useState('');
-  const [copilotAnswer, setCopilotAnswer] = useState('');
-  const [copilotLoading, setCopilotLoading] = useState(false);
-  const [copilotError, setCopilotError] = useState('');
   const companyTags = useMemo(() => store.tags.filter((t) => t.scope === 'company'), [store.tags]);
   const personalTags = useMemo(() => store.tags.filter((t) => t.scope === 'personal'), [store.tags]);
 
@@ -351,31 +345,6 @@ export default function ProfilesPage() {
       personalTags: personalTags.length,
     };
   }, [store.contacts, companyTags.length, personalTags.length]);
-
-  const runCopilot = async () => {
-    const prompt = copilotPrompt.trim();
-    if (!prompt || copilotLoading) return;
-    setCopilotLoading(true);
-    setCopilotError('');
-
-    const portfolioPreview = cards
-      .slice(0, 8)
-      .map((card) => `${card.name} | score ${card.scores.overall} | readiness ${card.readinessBand} | tags ${card.tags.map((t) => t.label).join(', ')}`)
-      .join('\n');
-
-    try {
-      const result = await apiPost<ReportAssistantResponse>('/api/reports/assistant/query', {
-        query: `Contesto CRM Horizon Europe:\n${portfolioPreview || 'Nessun partner nel CRM'}\n\nRichiesta: ${prompt}`,
-      });
-      setCopilotAnswer(result.answer || 'Nessuna risposta disponibile.');
-    } catch (err) {
-      setCopilotError(String(err));
-      const fallback = cards.slice(0, 3).map((card) => `${card.name}: score ${card.scores.overall}, readiness ${card.readinessBand}`).join(' • ');
-      setCopilotAnswer(`Copilot fallback: i partner piu pronti al momento sono ${fallback || 'non disponibili'}.`);
-    } finally {
-      setCopilotLoading(false);
-    }
-  };
 
   return (
     <section className="profiles-page">
@@ -595,24 +564,6 @@ export default function ProfilesPage() {
                 </button>
               );
             })}
-          </div>
-
-          <div className="profiles-copilot card-premium">
-            <h4>CRM Copilot</h4>
-            <p className="small">Analisi assistita su partner, gap di consorzio e next action.</p>
-            <textarea
-              rows={3}
-              placeholder="Es: Suggerisci i 3 partner migliori per una call CL4 con TRL 6-7."
-              value={copilotPrompt}
-              onChange={(e) => setCopilotPrompt(e.target.value)}
-            />
-            <div className="row">
-              <button onClick={() => { void runCopilot(); }} disabled={copilotLoading}>
-                {copilotLoading ? 'Analisi in corso...' : 'Esegui analisi'}
-              </button>
-            </div>
-            {copilotError ? <p className="small">{copilotError}</p> : null}
-            {copilotAnswer ? <p className="small">{copilotAnswer}</p> : null}
           </div>
         </article>
       </section>

@@ -98,16 +98,13 @@ if [[ ! -w "$ROOT_DIR" || ! -w "$BACKEND_DIR" || ! -w "$FRONTEND_DIR" ]]; then
 fi
 
 mkdir -p "$RUNTIME_DIR" "$LOG_DIR" "$BACKEND_DIR/data"
-mkdir -p "$RUNTIME_DIR/reports" "$RUNTIME_DIR/snapshots"
+mkdir -p "$RUNTIME_DIR/snapshots"
 
 cat > "$BACKEND_DIR/.env" <<EOF
 DATABASE_URL=sqlite:///./data/horizonradar.db
 REDIS_URL=redis://localhost:6379/0
-OPENAI_API_KEY=
-EMBEDDING_PROVIDER=local
-EMBEDDING_MODEL=text-embedding-3-small
+EMBEDDING_DIMENSION=384
 SNAPSHOT_DIR=../runtime/snapshots
-REPORT_DIR=../runtime/reports
 SMTP_HOST=
 SMTP_PORT=587
 SMTP_USER=
@@ -121,6 +118,8 @@ NEXT_PUBLIC_API_URL=${API_URL}
 NEXT_PUBLIC_DEMO_USER_ID=demo-user
 AUTH_SECRET=devsecret
 AUTH_URL=http://${LAN_IP}:${FRONTEND_PORT}
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 EOF
@@ -140,8 +139,7 @@ source "$BACKEND_DIR/.venv/bin/activate"
 export PYTHONNOUSERSITE=1
 export DATABASE_URL="sqlite:///./data/horizonradar.db"
 export REDIS_URL="redis://localhost:6379/0"
-export EMBEDDING_PROVIDER="local"
-export OPENAI_API_KEY=""
+export EMBEDDING_DIMENSION="384"
 
 REQ_HASH_FILE="$BACKEND_DIR/.venv/.requirements.sha256"
 CURRENT_REQ_HASH="$(shasum -a 256 "$BACKEND_DIR/requirements.txt" | awk '{print $1}')"
@@ -162,8 +160,7 @@ echo "Inizializzo DB e dati demo..."
   cd "$BACKEND_DIR"
   export DATABASE_URL="sqlite:///./data/horizonradar.db"
   export REDIS_URL="redis://localhost:6379/0"
-  export EMBEDDING_PROVIDER="local"
-  export OPENAI_API_KEY=""
+  export EMBEDDING_DIMENSION="384"
   python3 scripts/init_db.py
   python3 scripts/load_demo_topics.py
   python3 scripts/seed_demo.py
@@ -178,13 +175,13 @@ chmod -R +x "$FRONTEND_DIR/node_modules/.bin" >/dev/null 2>&1 || true
 kill_port "$BACKEND_PORT"
 kill_port "$FRONTEND_PORT"
 
-BACKEND_CMD="cd \"$BACKEND_DIR\" && source .venv/bin/activate && export PYTHONNOUSERSITE=1 && export PYTHONPATH=\"$BACKEND_DIR\" && export DATABASE_URL='sqlite:///./data/horizonradar.db' && export REDIS_URL='redis://localhost:6379/0' && export EMBEDDING_PROVIDER='local' && export OPENAI_API_KEY='' && python3 -m uvicorn app.main:app --host $BACKEND_HOST --port $BACKEND_PORT --reload"
+BACKEND_CMD="cd \"$BACKEND_DIR\" && source .venv/bin/activate && export PYTHONNOUSERSITE=1 && export PYTHONPATH=\"$BACKEND_DIR\" && export DATABASE_URL='sqlite:///./data/horizonradar.db' && export REDIS_URL='redis://localhost:6379/0' && export EMBEDDING_DIMENSION='384' && python3 -m uvicorn app.main:app --host $BACKEND_HOST --port $BACKEND_PORT --reload"
 FRONTEND_CMD="cd \"$FRONTEND_DIR\" && npm run dev -- -H 0.0.0.0 -p $FRONTEND_PORT"
 
 if ! osascript <<EOF
 tell application "Terminal"
   activate
-  do script "bash -lc 'cd \"$BACKEND_DIR\" && source .venv/bin/activate && export PYTHONNOUSERSITE=1 && export PYTHONPATH=\"$BACKEND_DIR\" && export DATABASE_URL=\"sqlite:///./data/horizonradar.db\" && export REDIS_URL=\"redis://localhost:6379/0\" && export EMBEDDING_PROVIDER=\"local\" && export OPENAI_API_KEY=\"\" && python3 -m uvicorn app.main:app --host $BACKEND_HOST --port $BACKEND_PORT --reload'"
+  do script "bash -lc 'cd \"$BACKEND_DIR\" && source .venv/bin/activate && export PYTHONNOUSERSITE=1 && export PYTHONPATH=\"$BACKEND_DIR\" && export DATABASE_URL=\"sqlite:///./data/horizonradar.db\" && export REDIS_URL=\"redis://localhost:6379/0\" && export EMBEDDING_DIMENSION=\"384\" && python3 -m uvicorn app.main:app --host $BACKEND_HOST --port $BACKEND_PORT --reload'"
   do script "bash -lc 'cd \"$FRONTEND_DIR\" && npm run dev -- -H 0.0.0.0 -p $FRONTEND_PORT'"
 end tell
 EOF

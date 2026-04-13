@@ -41,20 +41,9 @@ export type DashboardOverview = {
   generated_at: string;
 };
 
-export type DecisionReport = {
-  markdown: string;
-  generated_at: string;
-};
-
 export async function fetchDashboardOverviewV2(limit = 12, modelVersion = 'v2-sprint1'): Promise<DashboardOverview> {
   return apiGet<DashboardOverview>(
     `/api/v2/dashboard/overview?limit=${limit}&model_version=${encodeURIComponent(modelVersion)}`
-  );
-}
-
-export async function fetchDecisionReportV2(limit = 12, modelVersion = 'v2-sprint1'): Promise<DecisionReport> {
-  return apiGet<DecisionReport>(
-    `/api/v2/dashboard/decision-report?limit=${limit}&model_version=${encodeURIComponent(modelVersion)}`
   );
 }
 

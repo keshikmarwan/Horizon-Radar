@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Production Planner — Generative Bionics</title>
+  <link rel="stylesheet" href="../style.css">
+<script src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
+
+</head>
+<body>
+
+  <nav>
+    <a href="../careers.html" class="back-link">← Open Positions</a>
+    <a href="../index.html" class="logo-link">
+      <img src="../assets/GBionics_150_Ba4PNBcd09MECOyUavQYO.png" alt="Generative Bionics" class="logo-img">
+    </a>
+  </nav>
+
+  <main class="job-page">
+
+    <div class="job-header">
+      <h1>Production Planner</h1>
+      <div class="job-meta">
+        <span class="location">Via Melen 83, 16152 Genoa, Italy</span>
+        <span class="contract">Full-time, Permanent</span>
+      </div>
+    </div>
+
+
+<section>
+  <h2>About Us</h2>
+  <p>Generative Bionics is a deep-tech company building humanoid robot platforms to deploy human-centered Physical AI. We design intelligent, capable machines that work alongside people in real-world environments — developed in Genova, Italy.</p>
+</section>
+
+
+    
+    <section>
+      <h2>Role</h2>
+      <p>In an environment where design and manufacturing coexist, we need someone to precisely plan the execution. We are looking for a Production Planner to translate R&amp;D designs into concrete operational plans. You will be responsible for the &#34;CAD to Robot&#34; transition: managing technical data via PLM, handling Bills of Materials, and organizing workflows to ensure our humanoids are built on schedule.</p>
+    </section>
+    
+
+    
+    <section>
+      <h2>Responsibilities</h2>
+      <p>- PLM &amp; BOM Management: Use of the PLM (Product Lifecycle Management) system to manage product lifecycles and revisions. Analyze Engineering Bills of Materials (EBOM) and convert them into Manufacturing Bills of Materials (MBOM). 
+- Planning &amp; Procurement: Generate Purchase Requisitions (RDA) based on project requirements and monitor material availability. 
+- Work Breakdown: Break down the main project into logical sub-activities and Work Orders. 
+- Resource Scheduling: Schedule tasks for assembly technicians based on the availability of warehouse kits, defining assembly priorities. 
+- Process Optimization: Collaborate with engineering to improve product manufacturability and workflow efficiency.</p>
+    </section>
+    
+
+    
+    <section>
+      <h2>Requirements</h2>
+      <p>- Education: Degree in Management Engineering, Mechanical Engineering, or equivalent technical background. 
+- Experience: 2-4 years in production planning or industrialization, preferably in complex assembly or robotics sectors. 
+- Strong knowledge of PLM systems for technical data management. 
+- Proficiency with ERP systems (e.g., MS Business Central) for operations.</p>
+    </section>
+    
+
+    
+    <section>
+      <h2>Valued Extras</h2>
+      <p>- Analytical mindset, ability to manage deadlines, and proactive attitude.</p>
+    </section>
+    
+
+    
+    <section>
+      <h2>We Offer</h2>
+      <p>- Environment: An informal, fast-paced, and meritocratic startup context driven by Agile methodologies. 
+- Competitive salary and contract (CCNL Metalmeccanico) in a unique high-tech environment.</p>
+    </section>
+    
+
+<section>
+  <h2>Disclaimer</h2>
+  <p>We are proud to be an Equal Opportunity Employer. We evaluate all qualified applicants solely on the basis of merit and business needs, without distinction or discrimination based on gender, race, color, ethnic or social origin, age, religion, sexual orientation, gender identity, disability, or any other characteristic protected by law.</p>
+</section>
+
+
+    <!-- Apply button -->
+    <div class="apply-wrap">
+      <button class="apply-btn" id="openApply">Apply Now</button>
+    </div>
+
+  </main>
+
+  <!-- ── APPLY OVERLAY ───────────────────────────────────────── -->
+  <div class="apply-overlay" id="applyOverlay">
+    <div class="apply-dialog">
+      <button class="apply-dialog-close" id="closeApply" aria-label="Close">✕</button>
+
+      <!-- ============ BEGIN CONTACT FORM ============ -->
+      <style>
+        form {
+          max-width: 40rem;
+          margin: 0 auto;
+          color: var(--white);
+          text-align: left;
+          position: relative;
+        }
+        input, textarea {
+          width: 100%;
+          padding: 10px;
+          margin-top: 10px;
+          background: var(--glass);
+          border: 1px solid var(--white);
+          border-radius: 10px;
+          color: var(--white);
+          font-size: 15px;
+          box-sizing: border-box;
+        }
+        input::placeholder, textarea::placeholder {
+          color: var(--white);
+          font-size: 15px;
+        }
+        textarea {
+          height: 120px;
+          resize: vertical;
+        }
+        .name-wrapper {
+          display: flex;
+          gap: 10px;
+          margin-top: 10px;
+        }
+        .name-wrapper input {
+          flex: 1;
+          margin-top: 0;
+        }
+        @media (max-width: 500px) {
+          .name-wrapper { flex-direction: column; }
+        }
+        .custom-checkbox {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 14px;
+          font-size: 14px;
+          color: var(--white);
+          cursor: pointer;
+          user-select: none;
+          width: 100%;
+        }
+        .custom-checkbox input {
+          position: absolute;
+          opacity: 0;
+          width: 0;
+          height: 0;
+          margin: 0;
+        }
+        .custom-checkbox .checkmark {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 16px;
+          height: 16px;
+          box-sizing: border-box;
+          background-color: var(--black);
+          border: 1px solid var(--white);
+          border-radius: 3px;
+          flex-shrink: 0;
+          transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+        .custom-checkbox input:checked + .checkmark::after {
+          content: "";
+          display: block;
+          width: 4px;
+          height: 8px;
+          border: solid var(--white);
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
+        .custom-checkbox a {
+          color: #ccc;
+          text-decoration: underline;
+        }
+        .custom-checkbox input:focus + .checkmark {
+          outline: 2px solid var(--white);
+          outline-offset: 2px;
+        }
+        button[type="submit"], #okButton {
+          width: fit-content;
+          margin-top: 16px;
+          padding: 0.5rem;
+          background-color: var(--glass);
+          color: var(--white);
+          border: none;
+          border-radius: 20px;
+          font-size: 15px;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+          box-shadow: 0 2px 5px 0 var(--dark-glass), inset 0 1px 1px 0 var(--bright-glass);
+          backdrop-filter: blur(var(--glass-blur));
+        }
+        button[type="submit"]:hover, #okButton:hover {
+          background-color: var(--white);
+          color: var(--black);
+        }
+        #formResult p {
+          font-size: 16px;
+          margin-top: 20px;
+        }
+        .fade-out {
+          opacity: 0;
+          transition: opacity 0.4s ease;
+        }
+      </style>
+
+      <div id="formResult"></div>
+
+      <form id="contactForm" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="access_key" value="26bf4a91-4129-4afa-a401-dafe9a8850c8">
+        <input type="hidden" name="subject" value="012026-04-production-planner - New Submission from Web3Forms">
+        <input type="hidden" name="redirect" value="">
+
+        <div class="name-wrapper">
+          <input type="text" name="first_name" placeholder="First name" required>
+          <input type="text" name="last_name" placeholder="Last name" required>
+        </div>
+
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="tel" name="phone" placeholder="Phone (Optional)">
+        <textarea name="message" placeholder="Your Message" required></textarea>
+        <input type="file" name="attachment" required>
+
+        <div class="checkbox-wrapper">
+          <label class="custom-checkbox">
+            <input type="checkbox" name="privacy" id="privacy" required>
+            <span class="checkmark"></span>
+            <a href="../contact-privacy.html" target="_blank" rel="noopener noreferrer">
+              I have read and understood the Privacy Policy
+            </a>
+          </label>
+        </div>
+
+        <br>
+        <p>The Company requires your consent to contact your previous/current employer. To withhold consent, simply do not check the box below.</p>
+
+        <label class="custom-checkbox">
+          <input type="checkbox" name="employer_consent" id="employer_consent">
+          <span class="checkmark"></span>
+          <span>I give Generative Bionics consent to contact my previous/current employer.</span>
+        </label>
+
+        <input type="checkbox" name="botcheck" style="display:none">
+
+        <button type="submit">Submit</button>
+      </form>
+
+      <p style="margin-top: 1.5rem; font-size: .85rem; color: var(--muted); text-align: center;">
+        Please attach your CV as a PDF file to the form.
+      </p>
+      <p style="font-size: .85rem; color: var(--muted); text-align: center;">
+        You will receive an email confirmation once your submission is successfully received.
+      </p>
+      <!-- ============ END CONTACT FORM ============ -->
+
+    </div>
+  </div>
+
+  <script>
+    // ── Overlay open/close ──────────────────────────────────────
+    const overlay  = document.getElementById('applyOverlay');
+    const openBtn  = document.getElementById('openApply');
+    const closeBtn = document.getElementById('closeApply');
+
+    openBtn.addEventListener('click', () => overlay.classList.add('is-open'));
+
+    function closeOverlay() {
+      overlay.classList.add('fade-out');
+      setTimeout(() => overlay.classList.remove('is-open', 'fade-out'), 400);
+    }
+
+    closeBtn.addEventListener('click', closeOverlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeOverlay(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && overlay.classList.contains('is-open')) closeOverlay();
+    });
+
+    // ── Form submission ─────────────────────────────────────────
+    document.getElementById('contactForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const form = this;
+      const formData = new FormData(form);
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const resultBox = document.getElementById('formResult');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Sending...";
+      resultBox.innerHTML = '';
+
+      try {
+        const response = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          body: formData
+        });
+        const result = await response.json();
+
+        if (response.ok) {
+          form.style.display = 'none';
+          resultBox.innerHTML = `<p>✅ ${result.message}</p>`;
+          const okBtn = document.createElement('button');
+          okBtn.id = 'okButton';
+          okBtn.textContent = 'OK';
+          okBtn.addEventListener('click', closeOverlay);
+          resultBox.appendChild(okBtn);
+        } else {
+          resultBox.innerHTML = `<p>❌ ${result.message}</p>`;
+        }
+      } catch (error) {
+        console.error(error);
+        resultBox.innerHTML = `<p>❌ Something went wrong, please try again.</p>`;
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit";
+    });
+  </script>
+<script>
+  const lenis = new Lenis();
+  function raf(time) {
+    lenis.raf(time);
+    requestAnimationFrame(raf);
+  }
+  requestAnimationFrame(raf);
+</script>
+
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e94cb192c560d5f',t:'MTc3NTY4ODIzMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

@@ -8,7 +8,6 @@ coverage/
 playwright-report/
 backend/.pytest_cache/
 backend/snapshots/
-backend/reports/
 backend/data/
 backend/horizonradar.db
 frontend/tsconfig.tsbuildinfo

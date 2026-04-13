@@ -4,7 +4,6 @@ from app.models.topic import Topic
 from app.models.topic_match import TopicMatch
 from app.models.fetch_snapshot import FetchSnapshot
 from app.models.draft_document import DraftDocument
-from app.models.monthly_report import MonthlyReport
 from app.models.opportunity_workflow import OpportunityWorkflow
 from app.models.topic_section import TopicSection
 from app.models.profile_capability import ProfileCapability

@@ -1,0 +1,118 @@
+/*------------------------------------*\
+   LOCAL SCREENS
+\*------------------------------------*/
+
+
+
+
+
+
+/*------------------------------------*\
+   END LOCAL SCREENS
+\*------------------------------------*/ 
+
+
+
+
+/*------------------------------------*\
+   LOCAL FIXES
+\*------------------------------------*/
+
+#highlights-gallery-item-4 .caption {
+    min-width: 660px;
+}
+
+@media (max-width: 1068px) {
+    #highlights-gallery-item-4 .caption {
+        min-width: 500px;
+    }
+}
+
+@media (max-width: 734px) {
+    #highlights-gallery-item-4 .caption {
+        min-width: 200px;
+    }
+}
+
+.section-battery .stats .stat-item:first-child {
+    margin-inline-end: 0;
+}
+
+@media (max-width: 734px) {
+    .section-battery .stats .stat-item:first-child {
+        margin-inline-end:0;
+    }
+}
+
+.section-battery .stats {
+    text-align: center;
+}
+
+@media (max-width: 734px) {
+	.section-battery .stats {
+    	text-align: left;
+	}
+}
+
+.section-battery .stats .stat-item .call-out {
+    margin-top:24px;
+}
+
+@media (max-width: 1068px) {
+    .section-battery .stats .stat-item .call-out {
+        margin-top:0;
+    }
+}
+
+@media (max-width: 734px) {
+    .section-battery .stats .stat-item .call-out {
+        margin-top:12px;
+    }
+}
+
+.section-battery .stats .stat-item .call-out .copy {
+    margin: 16px auto 0;
+}
+
+@media (max-width: 734px) {
+	.section-battery .stats .stat-item .call-out .copy {
+		margin: initial;
+    	margin-top: 12px;
+	}
+}
+
+@media (max-width: 1068px) {
+    .section-battery .stats .stat .stat-caption {
+        max-width: none;
+    }
+}
+@media (max-width: 734px) {
+    .section-battery .stats .stat .stat-caption {
+        max-width:290px;
+    }
+}
+
+@media (max-width:734px) {
+	.section-noise-control .stats-container .stat {
+		padding-top: 30px;
+	}
+}
+
+.typography-marquee-headline-base {
+    font-size: 56px;
+}
+
+@media (max-width: 1068px) {
+    .typography-marquee-headline-base {
+        font-size: 48px;
+    }
+}
+
+@media (max-width: 734px) {
+    .typography-marquee-headline-base {
+        font-size: 32px;
+    }
+}
+/*------------------------------------*\
+   END LOCAL FIXES
+\*------------------------------------*/ 

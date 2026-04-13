@@ -1,0 +1,72 @@
+.energy-flag-wrapper {
+  margin-top: 20px;
+}
+
+
+.energy-modal-container.ric-modal .energy-info-image-wrapper {
+    display: flex;
+    justify-content: center;
+    min-width: 260px;
+    background-color: #fff;
+    border-radius: 18px;
+    padding: 28px 0;
+    margin-bottom: 48px;
+}
+
+.energy-flag-wrapper .energy-flag-list li {
+	white-space: nowrap;
+}
+
+.energy-flag-wrapper .energy-flag-list li:nth-child(n+2) {
+    margin-inline-start: 0px;
+}
+
+.energy-flag-wrapper .energy-flag-list li:not(:last-child) {
+    margin-right: 20px;
+}
+
+.ric-modal:not(.energy-modal-container) .ric-modal-overlay {
+    --modal-overlay-padding-top: 0px;
+    --modal-overlay-padding-bottom: 0px;
+}
+
+.ric-modal:not(.energy-modal-container) .ric-modal-content-wrapper {
+    padding-inline-start: 0;
+    padding-inline-end: 0;
+}
+
+/*------------------------------------*\ 
+  HP CSS 
+\*------------------------------------*/ 
+
+html[data-layout-name] footer#ac-globalfooter .energy-flag-wrapper .energy-flag-list {
+	display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    row-gap: 15px;
+	column-gap: 20px;
+}
+
+html[data-layout-name] footer#ac-globalfooter .energy-flag-wrapper {
+	padding-bottom: 17px;
+}
+
+html[data-layout-name] footer#ac-globalfooter .energy-flag-wrapper .energy-flag-list li {
+	white-space: nowrap;
+	margin-inline-start: unset;
+	font-size: 12px;
+	padding: 0;
+}
+
+html[data-layout-name] footer#ac-globalfooter .ac-gf-sosumi:has(.energy-flag-wrapper):has(> ul) {
+	padding: 0 0 11px;
+}
+
+html[data-layout-name] footer#ac-globalfooter .ac-gf-sosumi:has(.energy-flag-wrapper) {
+	padding: 0 0 0;
+}
+
+
+/*------------------------------------*\ 
+  END HP CSS
+\*------------------------------------*/

@@ -1,0 +1,43 @@
+/*------------------------------------*\
+   LOCAL SCREENS
+\*------------------------------------*/
+
+
+
+
+
+
+/*------------------------------------*\
+   END LOCAL SCREENS
+\*------------------------------------*/ 
+
+
+
+
+/*------------------------------------*\
+   LOCAL FIXES
+\*------------------------------------*/
+
+.section-performance .subsection-mx-hero .section-mx-scroll {
+	overflow: visible;
+}
+html.chip-hero-enhanced .section-performance .subsection-gpu .gpu-composite-image {
+	margin-block-start: 260px;
+}
+@media (max-width: 1068px) {
+	html.chip-hero-enhanced .section-performance .subsection-gpu .gpu-composite-image {
+		margin-block-start: 160px;
+	}
+}
+@media (max-width: 734px) {
+	html.chip-hero-enhanced .section-performance .subsection-gpu .gpu-composite-image {
+		margin-block-start: 120px;
+	}
+}
+
+
+
+
+/*------------------------------------*\
+   END LOCAL FIXES
+\*------------------------------------*/

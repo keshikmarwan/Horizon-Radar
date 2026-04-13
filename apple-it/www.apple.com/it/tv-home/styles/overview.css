@@ -1,0 +1,104 @@
+/*------------------------------------*\
+   LOCAL SCREENS
+\*------------------------------------*/
+
+
+
+/*------------------------------------*\
+   END LOCAL SCREENS
+\*------------------------------------*/
+
+
+
+
+/*------------------------------------*\
+   LOCAL FIXES
+\*------------------------------------*/
+
+
+
+.section-big-screen .section-services .service-tile-ctas {
+	height: 75px;
+	justify-content: flex-end;
+}
+
+@media only screen and (max-width: 1068px) {
+	.section-big-screen .section-services .service-tile-ctas {
+		height: auto;
+		justify-content: initial;
+	}
+
+}
+
+@media only screen and (max-width: 734px) {
+	.section-big-screen .section-services .fitness .service-tile-ctas {
+		margin-top: .8em;
+	}
+}
+
+@media only screen and (max-width: 400px) {
+	.section-flex-tiles .homepod-mini .tile .button:not(:last-child) {
+		margin-right: 0px;
+	}
+}
+
+@media only screen and (max-width: 1068px) {
+    .section-accessories .section-gallery-long .gallery-item, .section-smart-home .section-gallery-long .gallery-item {
+        max-height: 470px;
+    }
+}
+
+.section-accessories #comfort .product-wrapper.product-wrapper-alt.morelines, .section-smart-home #comfort .product-wrapper.product-wrapper-alt.morelines {
+    bottom: 36px;
+}
+
+
+@media only screen and (max-width: 1068px) {
+	.section-accessories #comfort .product-wrapper.product-wrapper-alt.morelines, .section-smart-home #comfort .product-wrapper.product-wrapper-alt.morelines {
+		bottom: 15px;
+	}
+}
+
+
+.section-accessories #entry .product-wrapper.product-wrapper-alt, .section-smart-home #entry .product-wrapper.product-wrapper-alt {
+    bottom: 36px;
+}
+
+
+@media only screen and (max-width: 734px) {
+	.section-accessories .product-wrapper, .section-smart-home .product-wrapper {
+		bottom: 24px;
+	}
+}
+
+.section-accessories #security .product-wrapper.product-wrapper-alt.morelines,
+.section-accessories #comfort .product-wrapper.product-wrapper-alt.morelines,
+.section-accessories #entry .product-wrapper.product-wrapper-alt.morelines {
+	bottom: 22px;
+}
+
+@media only screen and (max-width: 1068px) {
+	.section-accessories #accessories-gallery .gallery-item .tile .product-wrapper.product-wrapper-alt {
+		bottom: 15px;
+	}
+}
+
+
+@media only screen and (max-width: 1068px) {
+    .section-accessories #light .product-wrapper {
+        bottom: 25px;
+    }
+}
+
+@media only screen and (max-width: 734px) {
+    .section-accessories #light .product-wrapper {
+        bottom: 39px;
+    }
+}
+
+
+
+
+/*------------------------------------*\
+   END LOCAL FIXES
+\*------------------------------------*/

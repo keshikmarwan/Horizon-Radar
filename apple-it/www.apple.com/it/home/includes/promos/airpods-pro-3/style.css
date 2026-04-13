@@ -1,0 +1,52 @@
+/*------------------------------------*\
+   LOCAL SCREENS
+\*------------------------------------*/
+
+
+
+
+
+
+/*------------------------------------*\
+   END LOCAL SCREENS
+\*------------------------------------*/ 
+
+
+
+
+/*------------------------------------*\
+   LOCAL FIXES
+\*------------------------------------*/
+
+[data-layout-name="obdb"] .main [data-module-template="promos"] [data-unit-id="airpods-pro-3"] .unit-copy-wrapper .subhead {
+    max-width:260px;
+}
+
+@media only screen and (max-width: 1068px) {
+    [data-layout-name="obdb"] .main [data-module-template="promos"] [data-unit-id="airpods-pro-3"] .unit-copy-wrapper .subhead {
+        max-width: 240px;
+    }
+}
+
+[data-layout-name="asa-takedown"] .main [data-module-template="promos"] [data-unit-id="airpods-pro-3"] .unit-copy-wrapper .subhead {
+    max-width:260px;
+}
+
+@media only screen and (max-width: 1068px) {
+    [data-layout-name="asa-takedown"] .main [data-module-template="promos"] [data-unit-id="airpods-pro-3"] .unit-copy-wrapper .subhead {
+        max-width: 240px;
+    }
+}
+
+[data-layout-name="obdb-takedown"] .main [data-module-template="promos"] [data-unit-id="airpods-pro-3"] .unit-copy-wrapper .subhead {
+    max-width:260px;
+}
+
+@media only screen and (max-width: 1068px) {
+    [data-layout-name="obdb-takedown"] .main [data-module-template="promos"] [data-unit-id="airpods-pro-3"] .unit-copy-wrapper .subhead {
+        max-width: 240px;
+    }
+}
+/*------------------------------------*\
+   END LOCAL FIXES
+\*------------------------------------*/ 

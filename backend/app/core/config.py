@@ -12,16 +12,8 @@ class Settings(BaseSettings):
     redis_url: str = 'redis://localhost:6379/0'
 
     snapshot_dir: str = 'snapshots'
-    report_dir: str = 'reports'
 
     embedding_dimension: int = 384
-    embedding_provider: str = 'auto'
-    embedding_model: str = 'text-embedding-3-small'
-
-    # Groq — provider AI gratuito (llama-3.3-70b)
-    groq_api_key: str | None = None
-    # OpenAI — opzionale, solo per embedding se EMBEDDING_PROVIDER=openai
-    openai_api_key: str | None = None
 
     smtp_host: str | None = None
     smtp_port: int = 587

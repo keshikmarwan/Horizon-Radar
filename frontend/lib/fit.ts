@@ -25,7 +25,7 @@ const STOP_WORDS = new Set([
   'where', 'which', 'while', 'with', 'would', 'your', 'azienda', 'cluster', 'interessi', 'company', 'description',
   'della', 'delle', 'dallo', 'degli', 'dell', 'dalla', 'sulla', 'sulle', 'sugli', 'nelle', 'negli', 'dati',
 ]);
-const SHORT_TECH_TERMS = new Set(['ai', 'ar', 'vr', 'xr', 'ml', 'nlp', 'iot', 'iiot', '5g', '6g']);
+const SHORT_TECH_TERMS = new Set(['ar', 'vr', 'xr', 'ml', 'nlp', 'iot', 'iiot', '5g', '6g']);
 
 function tokenize(text: string): string[] {
   const base = text

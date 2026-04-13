@@ -1,0 +1,182 @@
+/*------------------------------------*\
+   LOCAL SCREENS
+\*------------------------------------*/
+
+
+.enhanced-xp[data-layout-name="macbook-announce"]
+  .main
+  [data-module-template="heroes"]
+  [data-unit-id="macbook-neo"]
+  .unit-wrapper[data-inline-media-hero]
+  .intro-copy {
+  width: 416px;
+  height: 61px;
+  background-size: 416px 61px;
+  background-repeat: no-repeat;
+  background-image: url("/it/home/includes/heroes/macbook-neo/hello_neo__d1iz9q7unrgy_large.png");
+  display: block;
+  position: absolute;
+  left: 50%;
+  -webkit-transform: translate(-50%, 100%);
+  transform: translate(-50%, 100%);
+}
+@media only screen and (-webkit-min-device-pixel-ratio: 1.5),
+  only screen and (min-resolution: 1.5dppx),
+  (-webkit-min-device-pixel-ratio: 1.5),
+  (min-resolution: 144dpi) {
+  .enhanced-xp[data-layout-name="macbook-announce"]
+    .main
+    [data-module-template="heroes"]
+    [data-unit-id="macbook-neo"]
+    .unit-wrapper[data-inline-media-hero]
+    .intro-copy {
+    background-image: url("/it/home/includes/heroes/macbook-neo/hello_neo__d1iz9q7unrgy_large_2x.png");
+  }
+}
+@media only screen and (max-width: 1068px) {
+  .enhanced-xp[data-layout-name="macbook-announce"]
+    .main
+    [data-module-template="heroes"]
+    [data-unit-id="macbook-neo"]
+    .unit-wrapper[data-inline-media-hero]
+    .intro-copy {
+    width: 404px;
+    height: 59px;
+    background-size: 404px 59px;
+    background-repeat: no-repeat;
+    background-image: url("/it/home/includes/heroes/macbook-neo/hello_neo__d1iz9q7unrgy_medium.png");
+  }
+}
+@media only screen and (max-width: 1068px) and (-webkit-min-device-pixel-ratio: 1.5),
+  only screen and (max-width: 1068px) and (min-resolution: 1.5dppx),
+  only screen and (max-width: 1068px) and (min-resolution: 144dpi) {
+  .enhanced-xp[data-layout-name="macbook-announce"]
+    .main
+    [data-module-template="heroes"]
+    [data-unit-id="macbook-neo"]
+    .unit-wrapper[data-inline-media-hero]
+    .intro-copy {
+    background-image: url("/it/home/includes/heroes/macbook-neo/hello_neo__d1iz9q7unrgy_medium_2x.png");
+  }
+}
+@media only screen and (max-width: 734px) {
+  .enhanced-xp[data-layout-name="macbook-announce"]
+    .main
+    [data-module-template="heroes"]
+    [data-unit-id="macbook-neo"]
+    .unit-wrapper[data-inline-media-hero]
+    .intro-copy {
+    width: 280px;
+    height: 41px;
+    background-size: 280px 41px;
+    background-repeat: no-repeat;
+    background-image: url("/it/home/includes/heroes/macbook-neo/hello_neo__d1iz9q7unrgy_small.png");
+  }
+}
+@media only screen and (max-width: 734px) and (-webkit-min-device-pixel-ratio: 1.5),
+  only screen and (max-width: 734px) and (min-resolution: 1.5dppx),
+  only screen and (max-width: 734px) and (min-resolution: 144dpi) {
+  .enhanced-xp[data-layout-name="macbook-announce"]
+    .main
+    [data-module-template="heroes"]
+    [data-unit-id="macbook-neo"]
+    .unit-wrapper[data-inline-media-hero]
+    .intro-copy {
+    background-image: url("/it/home/includes/heroes/macbook-neo/hello_neo__d1iz9q7unrgy_small_2x.png");
+  }
+}
+
+
+.main
+  [data-module-template="heroes"]
+  .unit-image-wrapper
+  .unit-image.unit-image-macbook-neo-hello-neo {
+  width: 416px;
+  height: 61px;
+  background-size: 416px 61px;
+  background-repeat: no-repeat;
+  background-image: url("/it/home/includes/heroes/macbook-neo/hello_neo__d1iz9q7unrgy_large.png");
+}
+@media only screen and (-webkit-min-device-pixel-ratio: 1.5),
+  only screen and (min-resolution: 1.5dppx),
+  (-webkit-min-device-pixel-ratio: 1.5),
+  (min-resolution: 144dpi) {
+  .main
+    [data-module-template="heroes"]
+    .unit-image-wrapper
+    .unit-image.unit-image-macbook-neo-hello-neo {
+    background-image: url("/it/home/includes/heroes/macbook-neo/hello_neo__d1iz9q7unrgy_large_2x.png");
+  }
+}
+@media only screen and (max-width: 1068px) {
+  .main
+    [data-module-template="heroes"]
+    .unit-image-wrapper
+    .unit-image.unit-image-macbook-neo-hello-neo {
+    width: 404px;
+    height: 59px;
+    background-size: 404px 59px;
+    background-repeat: no-repeat;
+    background-image: url("/it/home/includes/heroes/macbook-neo/hello_neo__d1iz9q7unrgy_medium.png");
+  }
+}
+@media only screen and (max-width: 1068px) and (-webkit-min-device-pixel-ratio: 1.5),
+  only screen and (max-width: 1068px) and (min-resolution: 1.5dppx),
+  only screen and (max-width: 1068px) and (min-resolution: 144dpi) {
+  .main
+    [data-module-template="heroes"]
+    .unit-image-wrapper
+    .unit-image.unit-image-macbook-neo-hello-neo {
+    background-image: url("/it/home/includes/heroes/macbook-neo/hello_neo__d1iz9q7unrgy_medium_2x.png");
+  }
+}
+@media only screen and (max-width: 734px) {
+  .main
+    [data-module-template="heroes"]
+    .unit-image-wrapper
+    .unit-image.unit-image-macbook-neo-hello-neo {
+    width: 280px;
+    height: 41px;
+    background-size: 280px 41px;
+    background-repeat: no-repeat;
+    background-image: url("/it/home/includes/heroes/macbook-neo/hello_neo__d1iz9q7unrgy_small.png");
+  }
+}
+@media only screen and (max-width: 734px) and (-webkit-min-device-pixel-ratio: 1.5),
+  only screen and (max-width: 734px) and (min-resolution: 1.5dppx),
+  only screen and (max-width: 734px) and (min-resolution: 144dpi) {
+  .main
+    [data-module-template="heroes"]
+    .unit-image-wrapper
+    .unit-image.unit-image-macbook-neo-hello-neo {
+    background-image: url("/it/home/includes/heroes/macbook-neo/hello_neo__d1iz9q7unrgy_small_2x.png");
+  }
+}
+
+
+
+
+
+/*------------------------------------*\
+   END LOCAL SCREENS
+\*------------------------------------*/ 
+
+
+
+
+/*------------------------------------*\
+   LOCAL FIXES
+\*------------------------------------*/
+
+
+
+@media only screen and (max-width: 734px) {
+    .main [data-module-template="heroes"] [data-unit-id="macbook-neo"] .unit-copy-wrapper .cta-links .iconcontrol {
+        top: 143px;
+    }
+}
+
+
+/*------------------------------------*\
+   END LOCAL FIXES
+\*------------------------------------*/ 

@@ -13,12 +13,12 @@ from app.services.matching_service import recompute_matches
 SEED_PROFILES = [
     {
         'user_id': 'demo-user',
-        'name': 'Industrial AI BU',
-        'description': 'We build edge AI systems for predictive maintenance, digital twins and computer vision in manufacturing.',
-        'tags': ['AI', 'edge computing', 'manufacturing', 'digital twin'],
+        'name': 'Industrial Data BU',
+        'description': 'We build edge data systems for predictive maintenance, digital twins and computer vision in manufacturing.',
+        'tags': ['data', 'edge computing', 'manufacturing', 'digital twin'],
         'constraints': {
             'preferred_trl': 6,
-            'must_have_keywords': ['manufacturing', 'AI'],
+            'must_have_keywords': ['manufacturing', 'data'],
             'avoid_action_types': ['CSA'],
         },
     },

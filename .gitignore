@@ -1,5 +1,44 @@
+# Dependencies
 node_modules/
 frontend/node_modules/
-.next/
 
+# Frontend build/cache
+.next/
+frontend/.next/
+out/
+
+# Python virtualenvs
 backend/env
+backend/.venv/
+.venv/
+venv/
+
+# Python cache/artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local runtime outputs
+runtime/logs/*
+runtime/reports/*
+runtime/snapshots/*
+!runtime/logs/.gitkeep
+!runtime/reports/.gitkeep
+!runtime/snapshots/.gitkeep
+
+# OS/editor temp files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.log
+
+# Local env files
+.env
+.env.local
+frontend/.env.local
+backend/.env

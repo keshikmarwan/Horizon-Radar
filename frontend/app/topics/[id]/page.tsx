@@ -39,17 +39,21 @@ export default function TopicDetailPage() {
   }
 
   return (
-    <section>
-      <h1>{topic.topic_id}</h1>
-      <p>{topic.title}</p>
-      <div className="card">
+    <section className="apple-detail-page topic-detail-page">
+      <header className="apple-detail-hero">
+        <p className="apple-detail-kicker">Topic</p>
+        <h1>{topic.topic_id}</h1>
+        <p className="small">{topic.title}</p>
+      </header>
+
+      <div className="card apple-detail-panel">
         <h3>Key requirements</h3>
         <p className="small">Cluster: {topic.cluster || 'N/A'} | Action type: {topic.action_type || 'N/A'}</p>
         <p className="small">TRL: {topic.trl_min ?? '?'}-{topic.trl_max ?? '?'}</p>
       </div>
 
       {fit ? (
-        <div className="card">
+        <div className="card apple-detail-panel">
           <h3>Decision Card V2</h3>
           <p><strong>Overall fit:</strong> {Math.round(fit.overall_fit)}/100</p>
           <p><strong>Gap:</strong> {Math.round(fit.gap_score)}/100 | <strong>Readiness:</strong> {Math.round(fit.readiness_score)}/100</p>

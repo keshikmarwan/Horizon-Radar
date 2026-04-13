@@ -1,0 +1,401 @@
+/*------------------------------------*\
+   RIBBON CSS
+\*------------------------------------*/
+
+
+/*------------------------------------*\
+   END RIBBON CSS
+\*------------------------------------*/
+
+/*------------------------------------*\
+   LOCAL SCREENS
+\*------------------------------------*/
+.modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-1 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_zoom__gb7kd3oi4526_large.jpg); }
+@media(min-resolution:1.5dppx),(min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-1 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_zoom__gb7kd3oi4526_large_2x.jpg); }
+}
+@media(max-width:1068px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-1 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_zoom__gb7kd3oi4526_medium.jpg); }
+}
+@media(max-width:1068px)and (min-resolution:1.5dppx),(max-width:1068px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-1 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_zoom__gb7kd3oi4526_medium_2x.jpg); }
+}
+@media(max-width:734px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-1 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_zoom__gb7kd3oi4526_small.jpg); }
+}
+@media(max-width:734px)and (min-resolution:1.5dppx),(max-width:734px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-1 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_zoom__gb7kd3oi4526_small_2x.jpg); }
+}
+.modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-2 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_sketchup__cul89754h6gm_large.jpg); }
+@media(min-resolution:1.5dppx),(min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-2 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_sketchup__cul89754h6gm_large_2x.jpg); }
+}
+@media(max-width:1068px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-2 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_sketchup__cul89754h6gm_medium.jpg); }
+}
+@media(max-width:1068px)and (min-resolution:1.5dppx),(max-width:1068px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-2 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_sketchup__cul89754h6gm_medium_2x.jpg); }
+}
+@media(max-width:734px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-2 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_sketchup__cul89754h6gm_small.jpg); }
+}
+@media(max-width:734px)and (min-resolution:1.5dppx),(max-width:734px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-2 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_sketchup__cul89754h6gm_small_2x.jpg); }
+}
+.modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-3 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_procreate__fy8ejr5x1ii6_large.jpg); }
+@media(min-resolution:1.5dppx),(min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-3 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_procreate__fy8ejr5x1ii6_large_2x.jpg); }
+}
+@media(max-width:1068px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-3 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_procreate__fy8ejr5x1ii6_medium.jpg); }
+}
+@media(max-width:1068px)and (min-resolution:1.5dppx),(max-width:1068px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-3 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_procreate__fy8ejr5x1ii6_medium_2x.jpg); }
+}
+@media(max-width:734px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-3 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_procreate__fy8ejr5x1ii6_small.jpg); }
+}
+@media(max-width:734px)and (min-resolution:1.5dppx),(max-width:734px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-3 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_procreate__fy8ejr5x1ii6_small_2x.jpg); }
+}
+.modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-4 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_goodnotes__fnl1iba9icae_large.jpg); }
+@media(min-resolution:1.5dppx),(min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-4 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_goodnotes__fnl1iba9icae_large_2x.jpg); }
+}
+@media(max-width:1068px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-4 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_goodnotes__fnl1iba9icae_medium.jpg); }
+}
+@media(max-width:1068px)and (min-resolution:1.5dppx),(max-width:1068px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-4 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_goodnotes__fnl1iba9icae_medium_2x.jpg); }
+}
+@media(max-width:734px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-4 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_goodnotes__fnl1iba9icae_small.jpg); }
+}
+@media(max-width:734px)and (min-resolution:1.5dppx),(max-width:734px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-4 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_goodnotes__fnl1iba9icae_small_2x.jpg); }
+}
+.modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-5 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_morpholio_trace__c2wcu9vxyys2_large.jpg); }
+@media(min-resolution:1.5dppx),(min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-5 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_morpholio_trace__c2wcu9vxyys2_large_2x.jpg); }
+}
+@media(max-width:1068px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-5 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_morpholio_trace__c2wcu9vxyys2_medium.jpg); }
+}
+@media(max-width:1068px)and (min-resolution:1.5dppx),(max-width:1068px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-5 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_morpholio_trace__c2wcu9vxyys2_medium_2x.jpg); }
+}
+@media(max-width:734px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-5 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_morpholio_trace__c2wcu9vxyys2_small.jpg); }
+}
+@media(max-width:734px)and (min-resolution:1.5dppx),(max-width:734px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-5 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_morpholio_trace__c2wcu9vxyys2_small_2x.jpg); }
+}
+.modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-6 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_affinity_designer__glh7akocsyum_large.jpg); }
+@media(min-resolution:1.5dppx),(min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-6 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_affinity_designer__glh7akocsyum_large_2x.jpg); }
+}
+@media(max-width:1068px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-6 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_affinity_designer__glh7akocsyum_medium.jpg); }
+}
+@media(max-width:1068px)and (min-resolution:1.5dppx),(max-width:1068px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-6 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_affinity_designer__glh7akocsyum_medium_2x.jpg); }
+}
+@media(max-width:734px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-6 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_affinity_designer__glh7akocsyum_small.jpg); }
+}
+@media(max-width:734px)and (min-resolution:1.5dppx),(max-width:734px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-6 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_affinity_designer__glh7akocsyum_small_2x.jpg); }
+}
+.modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-8 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_lightroom__cuqkthke746e_large.jpg); }
+@media(min-resolution:1.5dppx),(min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-8 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_lightroom__cuqkthke746e_large_2x.jpg); }
+}
+@media(max-width:1068px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-8 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_lightroom__cuqkthke746e_medium.jpg); }
+}
+@media(max-width:1068px)and (min-resolution:1.5dppx),(max-width:1068px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-8 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_lightroom__cuqkthke746e_medium_2x.jpg); }
+}
+@media(max-width:734px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-8 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_lightroom__cuqkthke746e_small.jpg); }
+}
+@media(max-width:734px)and (min-resolution:1.5dppx),(max-width:734px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-8 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_lightroom__cuqkthke746e_small_2x.jpg); }
+}
+.modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-9 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_affinity_photo__e9lnqcs86w2m_large.jpg); }
+@media(min-resolution:1.5dppx),(min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-9 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_affinity_photo__e9lnqcs86w2m_large_2x.jpg); }
+}
+@media(max-width:1068px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-9 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_affinity_photo__e9lnqcs86w2m_medium.jpg); }
+}
+@media(max-width:1068px)and (min-resolution:1.5dppx),(max-width:1068px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-9 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_affinity_photo__e9lnqcs86w2m_medium_2x.jpg); }
+}
+@media(max-width:734px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-9 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_affinity_photo__e9lnqcs86w2m_small.jpg); }
+}
+@media(max-width:734px)and (min-resolution:1.5dppx),(max-width:734px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-9 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_affinity_photo__e9lnqcs86w2m_small_2x.jpg); }
+}
+.modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-10 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_fresco__cynvi8yfwt6q_large.jpg); }
+@media(min-resolution:1.5dppx),(min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-10 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_fresco__cynvi8yfwt6q_large_2x.jpg); }
+}
+@media(max-width:1068px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-10 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_fresco__cynvi8yfwt6q_medium.jpg); }
+}
+@media(max-width:1068px)and (min-resolution:1.5dppx),(max-width:1068px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-10 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_fresco__cynvi8yfwt6q_medium_2x.jpg); }
+}
+@media(max-width:734px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-10 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_fresco__cynvi8yfwt6q_small.jpg); }
+}
+@media(max-width:734px)and (min-resolution:1.5dppx),(max-width:734px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-10 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_fresco__cynvi8yfwt6q_small_2x.jpg); }
+}
+.modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-11 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_express__dqsg4uul17iq_large.jpg); }
+@media(min-resolution:1.5dppx),(min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-11 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_express__dqsg4uul17iq_large_2x.jpg); }
+}
+@media(max-width:1068px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-11 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_express__dqsg4uul17iq_medium.jpg); }
+}
+@media(max-width:1068px)and (min-resolution:1.5dppx),(max-width:1068px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-11 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_express__dqsg4uul17iq_medium_2x.jpg); }
+}
+@media(max-width:734px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-11 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_express__dqsg4uul17iq_small.jpg); }
+}
+@media(max-width:734px)and (min-resolution:1.5dppx),(max-width:734px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-11 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_express__dqsg4uul17iq_small_2x.jpg); }
+}
+.modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-12 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_acrobat__fzvo4bvyxeq2_large.jpg); }
+@media(min-resolution:1.5dppx),(min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-12 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_acrobat__fzvo4bvyxeq2_large_2x.jpg); }
+}
+@media(max-width:1068px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-12 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_acrobat__fzvo4bvyxeq2_medium.jpg); }
+}
+@media(max-width:1068px)and (min-resolution:1.5dppx),(max-width:1068px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-12 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_acrobat__fzvo4bvyxeq2_medium_2x.jpg); }
+}
+@media(max-width:734px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-12 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_acrobat__fzvo4bvyxeq2_small.jpg); }
+}
+@media(max-width:734px)and (min-resolution:1.5dppx),(max-width:734px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-portrait.app-12 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_adobe_acrobat__fzvo4bvyxeq2_small_2x.jpg); }
+}
+
+.modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-7 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_complete_anatomy__bjyrwu39d7rm_large.jpg); }
+@media(min-resolution:1.5dppx),(min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-7 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_complete_anatomy__bjyrwu39d7rm_large_2x.jpg); }
+}
+@media(max-width:1068px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-7 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_complete_anatomy__bjyrwu39d7rm_medium.jpg); }
+}
+@media(max-width:1068px)and (min-resolution:1.5dppx),(max-width:1068px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-7 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_complete_anatomy__bjyrwu39d7rm_medium_2x.jpg); }
+}
+@media(max-width:734px) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-7 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_complete_anatomy__bjyrwu39d7rm_small.jpg); }
+}
+@media(max-width:734px)and (min-resolution:1.5dppx),(max-width:734px)and (min-resolution:144dpi) {
+  .modal-l2.ipados-modal .subsection-3 .hardware-marquee-landscape.app-7 glass-screen { background-image:url(/it/ipad-air/images/overview/ipados/modal/apps/gallery/screens/app_gallery_screen_complete_anatomy__bjyrwu39d7rm_small_2x.jpg); }
+}
+
+
+/*------------------------------------*\
+   END LOCAL SCREENS
+\*------------------------------------*/
+
+
+
+
+/*------------------------------------*\
+   LOCAL FIXES
+\*------------------------------------*/
+
+html.firefox .lockup-wrap .headline-lockup {
+	width: 861px;
+  }
+  @media (max-width: 1068px) {
+	html.firefox .lockup-wrap .headline-lockup {
+	  width: 714px;
+	}
+  }
+  @media (max-width: 734px) {
+	html.firefox .lockup-wrap .headline-lockup {
+	  width: 343px;
+	}
+  }
+  
+.section-welcome .welcome__lockup .welcome__lockup-intelligence {
+    margin-top: 16px;
+}
+
+@media (max-width: 1068px) {
+    .section-welcome .welcome__lockup .welcome__lockup-intelligence {
+        margin-top: 16px;
+    }
+}
+
+@media (max-width: 734px) {
+    .section-welcome .welcome__lockup .welcome__lockup-intelligence {
+        margin-top: 15px;
+    }
+}
+
+.typography-overview-hero-headline {
+    font-size: 160px;
+}
+
+@media (max-width: 1068px) {
+    .typography-overview-hero-headline {
+        font-size: 110px;
+    }
+}
+
+@media (max-width: 734px) {
+    .typography-overview-hero-headline {
+        font-size: 60px;
+    }
+}
+
+@media only screen and (max-width:375px) {
+
+	.section-contrast .product-tile-ipad-air .product-tile-positioning {
+		margin-bottom: 20px;
+	}
+}
+
+.section-highlights .media-gallery-wrapper .media-gallery-item-ipados .caption-container .caption {
+	width: 34%;
+}
+
+@media only screen and (max-width:1068px) {
+	.section-highlights .media-gallery-wrapper .media-gallery-item-ipados .caption-container .caption {
+		width: var(--hlts-glry-caption-width);
+	}
+}
+
+
+@media only screen and (max-width:1068px) {
+	.modal-l2.ipados-modal .subsection-2 .headline {
+		font-size: 39px;
+	}
+}
+
+@media only screen and (max-width:734px) {
+	.modal-l2.ipados-modal .subsection-2 .headline {
+		font-size: 32px;
+	}
+}
+
+@media only screen and (max-width:1068px) {
+	.section-contrast .product-tile .product-tile-ctas .button, .section-contrast .product-tile .product-tile-ctas .product-tile-current {
+		margin-bottom: 20px;
+	}
+}
+
+@media only screen and (max-width:734px) {
+	.section-contrast .product-tile .product-tile-ctas .button, .section-contrast .product-tile .product-tile-ctas .product-tile-current {
+		margin-bottom: 0px;
+	}
+}
+
+.section-contrast .product-tile-ctas .icon-wrapper {
+	margin-inline-start: 29px;
+}
+
+@media only screen and (max-width:1068px) {
+	.section-contrast .product-tile-ctas .icon-wrapper {
+		margin-inline-start: 0px;
+	}
+}
+
+.typography-headline-standalone {
+  text-align: center;
+}
+
+.apple-intelligence-disclaimer {
+  font-size: 14px;
+  line-height: 1.2857742857;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-family: SF Pro Text,SF Pro Icons,Helvetica Neue,Helvetica,Arial,sans-serif;
+  color: #6e6e73;
+}
+
+@media (max-width:734px) {
+  .subsection-apple-intelligence .section-features .feature-image-wand .image-container .caption {
+    top: 349px;
+  }
+}
+
+@media (max-width:734px) {
+    .section-welcome .headline-lockup .headline-wrap {
+        overflow: hidden;
+    }
+}
+
+.modal-l2 .chip-l2-wrapper .subsection-2 .stat {
+    margin-top: 105px;
+}
+
+@media (max-width: 1068px) {
+    .modal-l2 .chip-l2-wrapper .subsection-2 .stat {
+        margin-top:74px;
+    }
+}
+
+@media (max-width: 734px) {
+    .modal-l2 .chip-l2-wrapper .subsection-2 .stat {
+        margin-top:82px;
+    }
+}
+
+.modal-l2 .chip-l2-wrapper .subsection-2 .image-ai-apps {
+    margin-top: 35px;
+}
+
+@media (max-width: 1068px) {
+    .modal-l2 .chip-l2-wrapper .subsection-2 .image-ai-apps {
+        margin-top: 100px;
+    }
+}
+
+@media (max-width: 734px) {
+    .modal-l2 .chip-l2-wrapper .subsection-2 .image-ai-apps {
+        margin-top: 20px;
+    }
+}
+
+.modal-l2 .connectivity-l2-wrapper .subsection-1 .caption {
+  position: absolute;
+  top: 822px;
+  left:131px
+}
+
+@media (max-width: 1068px) {
+  .modal-l2 .connectivity-l2-wrapper .subsection-1 .caption {
+      top: 668px;
+      left:56px
+  }
+}
+
+@media (max-width: 734px) {
+  .modal-l2 .connectivity-l2-wrapper .subsection-1 .caption {
+      top: 461px;
+      left: 0;
+      max-width:60px
+  }
+}
+
+
+ #decarbonizing-gallery-item-2 .icon-card-content {
+    padding-right: 44px;
+}
+/*------------------------------------*\
+   END LOCAL FIXES
+\*------------------------------------*/

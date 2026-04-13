@@ -1,0 +1,19 @@
+User-agent: *
+
+Disallow: /FirmRegisterDataPage.aspx
+Disallow: /FirmDataPage.aspx
+Disallow: /FundRegisterDataPage.aspx
+Disallow: /GlossaryPage.aspx
+
+
+Disallow: /LenderSearchPage.aspx
+Disallow: /AgentSearchPage.aspx
+Disallow: /FundSearchPage.aspx
+Disallow: /FirmSearchPage.aspx
+Disallow: /TCSPSearchPage.aspx
+
+Disallow: /FirmSearchResultsPage.aspx
+Disallow: /FundSearchResultsPage.aspx
+Disallow: /LenderSearchResultsPage.aspx
+Disallow: /TCSPSearchResultsPage.aspx
+Disallow: /DownloadsPage.aspx

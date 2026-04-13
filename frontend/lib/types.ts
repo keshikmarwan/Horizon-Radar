@@ -61,9 +61,6 @@ export type MatchRecomputeV2Response = {
   evaluated_topics: number;
   matches_inserted: number;
   matches_skipped_by_hard_filters: number;
-  groq_coverage_count?: number | null;
-  groq_coverage_total?: number | null;
-  groq_coverage_pct?: number | null;
   top_topics: Array<{
     topic_db_id: number;
     submission_priority: number;
@@ -94,15 +91,6 @@ export type TopicDecisionCardV2 = {
   suggested_actions: string[];
 };
 
-export type Report = {
-  id: number;
-  user_id: string;
-  report_month: string;
-  html_path: string;
-  pdf_path: string | null;
-  summary: string;
-};
-
 export type Draft = {
   id: number;
   source: string;
@@ -112,34 +100,4 @@ export type Draft = {
   version_label: string | null;
   diff_summary: string | null;
   discovered_at: string;
-};
-
-export type ReportDraftItem = {
-  source: string;
-  title: string;
-  link: string;
-  file_url: string | null;
-};
-
-export type BrokerageEvent = {
-  title: string;
-  link: string;
-  date: string | null;
-  location: string | null;
-  source: string | null;
-};
-
-export type DeadlineAlert = {
-  source: string;
-  title: string;
-  topic_id: string;
-  deadline: string;
-  status: string | null;
-  link: string | null;
-  explanation: string;
-};
-
-export type ReportAssistantResponse = {
-  answer: string;
-  sources: Array<Record<string, unknown>>;
 };

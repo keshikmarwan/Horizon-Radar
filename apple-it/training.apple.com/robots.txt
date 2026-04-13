@@ -1,0 +1,6 @@
+# robots.txt for https://training.apple.com/
+
+User-agent: Baiduspider
+Disallow: /*cid=
+
+Sitemap: https://training.apple.com/sitemap-index.xml

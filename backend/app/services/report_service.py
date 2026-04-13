@@ -1,56 +1,12 @@
 from datetime import datetime
-from pathlib import Path
 import re
-import smtplib
-from email.message import EmailMessage
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
 from dateutil import parser as dt_parser
-from sqlalchemy.orm import Session
-from jinja2 import Template
-from fpdf import FPDF
-
-from app.core.config import get_settings
-from app.models.monthly_report import MonthlyReport
 from app.services.connectors import build_connectors
 from app.services.http_fetcher import HttpFetcher
-
-settings = get_settings()
-
-REPORT_TEMPLATE = Template(
-    """
-    <html>
-      <head><title>Horizon Radar Monthly Report - {{ month }}</title></head>
-      <body>
-        <h1>Horizon Radar Monthly Report ({{ month }})</h1>
-        <h2>User</h2>
-        <p>{{ user_id }}</p>
-        <h2>Draft WP Updates</h2>
-        <ul>
-          {% for d in drafts %}
-            <li>
-              <a href="{{ d.link }}">{{ d.title }}</a> | {{ d.source }}
-              {% if d.file_url %}| PDF: <a href="{{ d.file_url }}">{{ d.file_url }}</a>{% endif %}
-            </li>
-          {% endfor %}
-        </ul>
-        <h2>Brokerage Events</h2>
-        <ul>
-          {% for e in brokerage_events %}
-            <li>
-              <a href="{{ e.link }}">{{ e.title }}</a>
-              {% if e.date %}| {{ e.date }}{% endif %}
-              {% if e.location %}| {{ e.location }}{% endif %}
-              {% if e.source %}| {{ e.source }}{% endif %}
-            </li>
-          {% endfor %}
-        </ul>
-      </body>
-    </html>
-    """
-)
 
 BROKERAGE_SOURCE_URLS = [
     'https://horizoneuropencpportal.eu/stage',
@@ -369,106 +325,3 @@ def _normalize_event_date(value: str) -> str:
     if range_match:
       return f"{range_match.group(1)}-{range_match.group(2)} {range_match.group(3)} {range_match.group(4)}"
     return clean
-
-
-def generate_monthly_report(db: Session, month: str | None = None, user_id: str | None = None) -> MonthlyReport:
-    return generate_web_report(db, report_kind='alerts', month=month, user_id=user_id)
-
-
-def generate_web_report(
-    db: Session,
-    report_kind: str = 'alerts',
-    month: str | None = None,
-    user_id: str | None = None,
-) -> MonthlyReport:
-    month = month or datetime.utcnow().strftime('%Y-%m')
-    target_user = user_id or 'system'
-    drafts = _collect_draft_updates()
-    brokerage_events = _collect_brokerage_events()
-
-    if report_kind == 'drafts':
-        drafts = drafts[:50]
-        brokerage_events = []
-    elif report_kind == 'brokerage':
-        drafts = []
-        brokerage_events = brokerage_events[:80]
-
-    html = REPORT_TEMPLATE.render(
-        month=month,
-        user_id=target_user,
-        drafts=drafts,
-        brokerage_events=brokerage_events,
-    )
-
-    report_dir = Path(settings.report_dir)
-    report_dir.mkdir(parents=True, exist_ok=True)
-    safe_user = re.sub(r'[^a-zA-Z0-9_-]+', '_', target_user)
-    html_path = report_dir / f'report-{report_kind}-{safe_user}-{month}.html'
-    html_path.write_text(html, encoding='utf-8')
-
-    pdf_path = report_dir / f'report-{report_kind}-{safe_user}-{month}.pdf'
-    _render_pdf_summary(pdf_path, month, target_user, drafts, brokerage_events)
-
-    summary = f'{report_kind.upper()} report {month} [{target_user}]: {len(drafts)} draft updates, {len(brokerage_events)} brokerage events.'
-    report = MonthlyReport(
-        user_id=target_user,
-        report_month=month,
-        html_path=str(html_path),
-        pdf_path=str(pdf_path),
-        summary=summary,
-    )
-    db.add(report)
-    db.commit()
-    db.refresh(report)
-    _send_email_digest(month, target_user, summary, str(html_path), str(pdf_path))
-    return report
-
-
-def _render_pdf_summary(
-    pdf_path: Path,
-    month: str,
-    user_id: str,
-    drafts: list,
-    brokerage_events: list,
-) -> None:
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_page()
-    pdf.set_font('Helvetica', 'B', 16)
-    pdf.cell(0, 10, f'Horizon Radar Report - {month}', ln=True)
-    pdf.set_font('Helvetica', size=11)
-    pdf.cell(0, 8, f'User: {user_id}', ln=True)
-    pdf.cell(0, 8, f'Draft updates: {len(drafts)}', ln=True)
-    pdf.cell(0, 8, f'Brokerage events: {len(brokerage_events)}', ln=True)
-    pdf.ln(4)
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.cell(0, 8, 'Draft updates', ln=True)
-    pdf.set_font('Helvetica', size=10)
-    for item in drafts[:10]:
-        pdf.multi_cell(0, 6, f"- {item['title']}")
-    pdf.ln(3)
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.cell(0, 8, 'Brokerage events', ln=True)
-    pdf.set_font('Helvetica', size=10)
-    for item in brokerage_events[:12]:
-        line = item['title']
-        if item.get('date'):
-            line += f" | {item['date']}"
-        if item.get('location'):
-            line += f" | {item['location']}"
-        pdf.multi_cell(0, 6, f'- {line}')
-    pdf.output(str(pdf_path))
-
-
-def _send_email_digest(month: str, user_id: str, summary: str, html_path: str, pdf_path: str) -> None:
-    if not settings.smtp_host or not settings.smtp_user or not settings.smtp_password:
-        return
-    msg = EmailMessage()
-    msg['Subject'] = f'Horizon Radar monthly digest - {month} [{user_id}]'
-    msg['From'] = settings.email_from
-    msg['To'] = settings.smtp_user
-    msg.set_content(f'{summary}\nHTML: {html_path}\nPDF: {pdf_path}')
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
-        server.starttls()
-        server.login(settings.smtp_user, settings.smtp_password)
-        server.send_message(msg)

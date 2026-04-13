@@ -192,7 +192,7 @@ Aggiungere campi:
 
 ## 7.2 Enrichment
 - taxonomy EU per cluster/destination/action type;
-- normalizzazione sinonimi dominio (es. AI in health, RWD, EHDS, EOSC, FAIR, GDPR, SSH);
+- normalizzazione sinonimi dominio (es. data in health, RWD, EHDS, EOSC, FAIR, GDPR, SSH);
 - tagging automatico su topic sections.
 
 ## 8) UI decisionale (frontend)
@@ -237,7 +237,7 @@ Deliverable:
 Deliverable:
 - contratti JSON validati;
 - test integrazione con snapshot chiamate;
-- fallback robusto se provider AI non disponibile.
+- fallback robusto se provider esterno non disponibile.
 
 ### Sprint 3 (settimane 5-6)
 - rifacimento frontend topic detail decisionale;
@@ -294,4 +294,3 @@ Intervenire subito su:
 - nuovo modello `topic_sections` e pipeline ingest in `work_programme_pdf_service.py`;
 - nuovo endpoint `/api/v2/matches/recompute` in `backend/app/api/routes.py`;
 - disattivare progressivamente uso `frontend/lib/fit.ts` per decisioni.
-
