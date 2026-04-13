@@ -22,12 +22,6 @@ detect_lan_ip() {
   echo "$ip"
 }
 
-LAN_IP="$(detect_lan_ip)"
-if [[ -z "${LAN_IP:-}" ]]; then
-  LAN_IP="127.0.0.1"
-fi
-API_URL="http://${LAN_IP}:${BACKEND_PORT}"
-
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "Comando mancante: $1"
@@ -52,9 +46,9 @@ validate_python_version() {
   local major minor
   major="$("$py_bin" -c 'import sys; print(sys.version_info.major)')"
   minor="$("$py_bin" -c 'import sys; print(sys.version_info.minor)')"
-  if [[ "$major" -ne 3 || "$minor" -lt 11 ]]; then
+  if [[ "$major" -ne 3 || "$minor" -lt 10 ]]; then
     echo "Python non supportato: $("$py_bin" --version 2>&1)"
-    echo "Installa Python 3.11+ e rilancia lo script."
+    echo "Installa Python 3.10+ e rilancia lo script."
     exit 1
   fi
 }
@@ -62,9 +56,6 @@ validate_python_version() {
 venv_is_healthy() {
   local venv_python="$BACKEND_DIR/.venv/bin/python3"
   if [[ ! -x "$venv_python" ]]; then
-    return 1
-  fi
-  if [[ -d "$BACKEND_DIR/.venv/Scripts" || -d "$BACKEND_DIR/.venv/Lib" ]]; then
     return 1
   fi
   PYTHONNOUSERSITE=1 "$venv_python" -c 'import site' >/dev/null 2>&1
@@ -86,30 +77,20 @@ require_cmd osascript
 
 PYTHON_BIN="$(pick_python || true)"
 if [[ -z "${PYTHON_BIN:-}" ]]; then
-  echo "Python non trovato. Installa Python 3.11+ e rilancia."
+  echo "Python non trovato. Installa Python 3.10+ e rilancia."
   exit 1
 fi
 validate_python_version "$PYTHON_BIN"
 
-if [[ ! -w "$ROOT_DIR" || ! -w "$BACKEND_DIR" || ! -w "$FRONTEND_DIR" ]]; then
-  echo "Permessi insufficienti nella cartella progetto."
-  echo "Esegui: chmod -R u+rwX \"$ROOT_DIR\""
-  exit 1
+LAN_IP="$(detect_lan_ip)"
+if [[ -z "${LAN_IP:-}" ]]; then
+  LAN_IP="127.0.0.1"
 fi
+API_URL="http://${LAN_IP}:${BACKEND_PORT}"
 
-mkdir -p "$RUNTIME_DIR" "$LOG_DIR" "$BACKEND_DIR/data"
-mkdir -p "$RUNTIME_DIR/snapshots"
+mkdir -p "$RUNTIME_DIR" "$LOG_DIR" "$BACKEND_DIR/data/horizon_matcher" "$RUNTIME_DIR/snapshots"
 
 cat > "$BACKEND_DIR/.env" <<EOF
-DATABASE_URL=sqlite:///./data/horizonradar.db
-REDIS_URL=redis://localhost:6379/0
-EMBEDDING_DIMENSION=384
-SNAPSHOT_DIR=../runtime/snapshots
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASSWORD=
-EMAIL_FROM=noreply@horizonradar.local
 APP_BASE_URL=http://localhost:${FRONTEND_PORT}
 EOF
 
@@ -120,8 +101,6 @@ AUTH_SECRET=devsecret
 AUTH_URL=http://${LAN_IP}:${FRONTEND_PORT}
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin123
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
 EOF
 
 if [[ ! -d "$BACKEND_DIR/.venv" ]]; then
@@ -137,9 +116,6 @@ fi
 
 source "$BACKEND_DIR/.venv/bin/activate"
 export PYTHONNOUSERSITE=1
-export DATABASE_URL="sqlite:///./data/horizonradar.db"
-export REDIS_URL="redis://localhost:6379/0"
-export EMBEDDING_DIMENSION="384"
 
 REQ_HASH_FILE="$BACKEND_DIR/.venv/.requirements.sha256"
 CURRENT_REQ_HASH="$(shasum -a 256 "$BACKEND_DIR/requirements.txt" | awk '{print $1}')"
@@ -155,17 +131,6 @@ if [[ "$CURRENT_REQ_HASH" != "$STORED_REQ_HASH" ]]; then
   printf '%s' "$CURRENT_REQ_HASH" > "$REQ_HASH_FILE"
 fi
 
-echo "Inizializzo DB e dati demo..."
-(
-  cd "$BACKEND_DIR"
-  export DATABASE_URL="sqlite:///./data/horizonradar.db"
-  export REDIS_URL="redis://localhost:6379/0"
-  export EMBEDDING_DIMENSION="384"
-  python3 scripts/init_db.py
-  python3 scripts/load_demo_topics.py
-  python3 scripts/seed_demo.py
-)
-
 if [[ ! -d "$FRONTEND_DIR/node_modules" ]]; then
   echo "Installo dipendenze frontend..."
   (cd "$FRONTEND_DIR" && npm install)
@@ -175,13 +140,13 @@ chmod -R +x "$FRONTEND_DIR/node_modules/.bin" >/dev/null 2>&1 || true
 kill_port "$BACKEND_PORT"
 kill_port "$FRONTEND_PORT"
 
-BACKEND_CMD="cd \"$BACKEND_DIR\" && source .venv/bin/activate && export PYTHONNOUSERSITE=1 && export PYTHONPATH=\"$BACKEND_DIR\" && export DATABASE_URL='sqlite:///./data/horizonradar.db' && export REDIS_URL='redis://localhost:6379/0' && export EMBEDDING_DIMENSION='384' && python3 -m uvicorn app.main:app --host $BACKEND_HOST --port $BACKEND_PORT --reload"
+BACKEND_CMD="cd \"$BACKEND_DIR\" && source .venv/bin/activate && export PYTHONNOUSERSITE=1 && export PYTHONPATH=\"$BACKEND_DIR\" && python3 -m uvicorn app.main:app --host $BACKEND_HOST --port $BACKEND_PORT --reload"
 FRONTEND_CMD="cd \"$FRONTEND_DIR\" && npm run dev -- -H 0.0.0.0 -p $FRONTEND_PORT"
 
 if ! osascript <<EOF
 tell application "Terminal"
   activate
-  do script "bash -lc 'cd \"$BACKEND_DIR\" && source .venv/bin/activate && export PYTHONNOUSERSITE=1 && export PYTHONPATH=\"$BACKEND_DIR\" && export DATABASE_URL=\"sqlite:///./data/horizonradar.db\" && export REDIS_URL=\"redis://localhost:6379/0\" && export EMBEDDING_DIMENSION=\"384\" && python3 -m uvicorn app.main:app --host $BACKEND_HOST --port $BACKEND_PORT --reload'"
+  do script "bash -lc 'cd \"$BACKEND_DIR\" && source .venv/bin/activate && export PYTHONNOUSERSITE=1 && export PYTHONPATH=\"$BACKEND_DIR\" && python3 -m uvicorn app.main:app --host $BACKEND_HOST --port $BACKEND_PORT --reload'"
   do script "bash -lc 'cd \"$FRONTEND_DIR\" && npm run dev -- -H 0.0.0.0 -p $FRONTEND_PORT'"
 end tell
 EOF

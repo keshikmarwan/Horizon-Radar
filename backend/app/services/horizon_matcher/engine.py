@@ -83,26 +83,33 @@ class HorizonMatcherEngine:
         except Exception as exc:
             raise HorizonMatcherError(f"Errore nel calcolo matcher: {exc}") from exc
 
+        def map_result(item: dict[str, Any], justification: str) -> dict[str, Any]:
+            return {
+                "call_id": item.get("call_id", ""),
+                "title": item.get("title", ""),
+                "cluster": item.get("cluster"),
+                "type_of_action": item.get("type_of_action"),
+                "reliability_score": item.get("reliability_score", 0.0),
+                "score_breakdown": item.get("score_breakdown", {}),
+                "spider_axes": item.get("spider_axes", {}),
+                "justification": justification,
+            }
+
         results = []
         for item in scored_calls[:top_n]:
             justification, _audit = generate_justification(item, profile, config=config)
-            results.append(
-                {
-                    "call_id": item.get("call_id", ""),
-                    "title": item.get("title", ""),
-                    "cluster": item.get("cluster"),
-                    "type_of_action": item.get("type_of_action"),
-                    "reliability_score": item.get("reliability_score", 0.0),
-                    "score_breakdown": item.get("score_breakdown", {}),
-                    "spider_axes": item.get("spider_axes", {}),
-                    "justification": justification,
-                }
-            )
+            results.append(map_result(item, justification))
+
+        other_results = []
+        for item in scored_calls[top_n:]:
+            justification, _audit = generate_justification(item, profile, config=config)
+            other_results.append(map_result(item, justification))
 
         return {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "top_n": top_n,
             "total_calls": len(calls),
             "results": results,
+            "other_results": other_results,
             "status": self.status(),
         }

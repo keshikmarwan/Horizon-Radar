@@ -13,7 +13,7 @@ rm -f frontend/tsconfig.tsbuildinfo
 find backend -type d -name '__pycache__' -prune -exec rm -rf {} +
 find backend -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
 
-find . -type f -name '.DS_Store' -delete
+find . \( -path './.git' -o -path './.git/*' \) -prune -o -type f -name '.DS_Store' -delete
 
 mkdir -p runtime/logs backend/data
 

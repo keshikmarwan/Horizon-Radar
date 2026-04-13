@@ -28,7 +28,7 @@ for %%P in (py.exe python.exe) do (
   )
 )
 
-echo Python non trovato. Installa Python 3.11+ e riprova.
+echo Python non trovato. Installa Python 3.10+ e riprova.
 goto :exit_err
 
 :py_found
@@ -41,18 +41,9 @@ if /I "%PY_BIN%"=="py.exe" (
 if not exist "%RUNTIME_DIR%" mkdir "%RUNTIME_DIR%"
 if not exist "%RUNTIME_DIR%\logs" mkdir "%RUNTIME_DIR%\logs"
 if not exist "%RUNTIME_DIR%\snapshots" mkdir "%RUNTIME_DIR%\snapshots"
-if not exist "%BACKEND_DIR%\data" mkdir "%BACKEND_DIR%\data"
+if not exist "%BACKEND_DIR%\data\horizon_matcher" mkdir "%BACKEND_DIR%\data\horizon_matcher"
 
 (
-  echo DATABASE_URL=sqlite:///./data/horizonradar.db
-  echo REDIS_URL=redis://localhost:6379/0
-  echo EMBEDDING_DIMENSION=384
-  echo SNAPSHOT_DIR=../runtime/snapshots
-  echo SMTP_HOST=
-  echo SMTP_PORT=587
-  echo SMTP_USER=
-  echo SMTP_PASSWORD=
-  echo EMAIL_FROM=noreply@horizonradar.local
   echo APP_BASE_URL=http://localhost:%FRONTEND_PORT%
 ) > "%BACKEND_DIR%\.env"
 
@@ -63,8 +54,6 @@ if not exist "%BACKEND_DIR%\data" mkdir "%BACKEND_DIR%\data"
   echo AUTH_URL=http://localhost:%FRONTEND_PORT%
   echo ADMIN_USERNAME=admin
   echo ADMIN_PASSWORD=admin123
-  echo STRIPE_SECRET_KEY=
-  echo STRIPE_WEBHOOK_SECRET=
 ) > "%FRONTEND_DIR%\.env.local"
 
 if not exist "%BACKEND_DIR%\.venv\Scripts\python.exe" (
@@ -93,29 +82,6 @@ if errorlevel 1 (
   echo Errore installazione dipendenze backend.
   goto :exit_err
 )
-
-echo Inizializzo DB e dati demo...
-set "DATABASE_URL=sqlite:///./data/horizonradar.db"
-set "REDIS_URL=redis://localhost:6379/0"
-set "EMBEDDING_DIMENSION=384"
-call .venv\Scripts\python.exe scripts\init_db.py
-if errorlevel 1 (
-  popd
-  echo Errore init_db.
-  goto :exit_err
-)
-call .venv\Scripts\python.exe scripts\load_demo_topics.py
-if errorlevel 1 (
-  popd
-  echo Errore load_demo_topics.
-  goto :exit_err
-)
-call .venv\Scripts\python.exe scripts\seed_demo.py
-if errorlevel 1 (
-  popd
-  echo Errore seed_demo.
-  goto :exit_err
-)
 popd
 
 if not exist "%FRONTEND_DIR%\node_modules" (
@@ -133,7 +99,7 @@ if not exist "%FRONTEND_DIR%\node_modules" (
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr :%BACKEND_PORT% ^| findstr LISTENING') do taskkill /F /PID %%a >nul 2>&1
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr :%FRONTEND_PORT% ^| findstr LISTENING') do taskkill /F /PID %%a >nul 2>&1
 
-start "Horizon Backend" cmd /k "cd /d %BACKEND_DIR% && set PYTHONPATH=%BACKEND_DIR% && set DATABASE_URL=sqlite:///./data/horizonradar.db && set REDIS_URL=redis://localhost:6379/0 && set EMBEDDING_DIMENSION=384 && call .venv\Scripts\activate.bat && python -m uvicorn app.main:app --host %BACKEND_HOST% --port %BACKEND_PORT% --reload"
+start "Horizon Backend" cmd /k "cd /d %BACKEND_DIR% && set PYTHONPATH=%BACKEND_DIR% && call .venv\Scripts\activate.bat && python -m uvicorn app.main:app --host %BACKEND_HOST% --port %BACKEND_PORT% --reload"
 start "Horizon Frontend" cmd /k "cd /d %FRONTEND_DIR% && npm run dev -- -H 0.0.0.0 -p %FRONTEND_PORT%"
 
 echo.

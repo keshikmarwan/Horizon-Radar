@@ -9,10 +9,7 @@ export function Header() {
   const pathname = usePathname();
   const links = [
     { href: '/', label: 'Overview' },
-    { href: '/cluster/CL1', label: 'Pipeline' },
-    { href: '/matcher', label: 'Matcher' },
-    { href: '/profiles', label: 'Profiles' },
-    { href: '/call-viewer', label: 'Call Viewer' },
+    { href: '/cluster/CL1', label: 'Fit' },
   ];
 
   const logout = async () => {

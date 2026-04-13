@@ -89,18 +89,6 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetchWithRetry(path, {
-    method: 'PATCH',
-    headers: await withUserHeaders({ 'Content-Type': 'application/json' }),
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    throw new Error(`API PATCH failed (${res.status}) for ${path}`);
-  }
-  return res.json() as Promise<T>;
-}
-
 export async function apiPostFormData<T>(path: string, formData: FormData): Promise<T> {
   const res = await fetchWithRetry(path, {
     method: 'POST',

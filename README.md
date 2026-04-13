@@ -1,51 +1,50 @@
 # Horizon Radar
 
-Horizon Radar e` una piattaforma di **opportunity intelligence** per Horizon Europe.
-Serve a trasformare documenti Work Programme e profili aziendali in decisioni operative: **GO / WATCH / NO-GO** su topic e call.
+Piattaforma unica in stile Apple con flusso operativo ridotto a:
 
-## Cosa fa questo software
+1. `Overview` (`/`)
+2. `Fit` (`/cluster/[id]`)
 
-1. Ingerisce contenuti Horizon (testo/PDF e topic) nel backend.
-2. Costruisce ranking di fit tra profilo azienda e opportunita`.
-3. Mostra una dashboard con punteggi, gap, readiness e priorita` di submission.
-4. Genera una fase di fit visuale (animazione) con outcome finale.
-5. Produce un **insight LLM** sul fit (diagnosi, azioni, rischi, decisione consigliata), con fallback locale se OpenAI non e` disponibile.
+Motore di matching Horizon Europe: backend FastAPI locale, senza API esterne obbligatorie.
 
-## Cosa deve fare in pratica (obiettivo operativo)
+## Struttura attuale
 
-- Ridurre il tempo di screening delle call.
-- Evidenziare subito i gap critici da chiudere.
-- Supportare decisioni snelle su dove investire effort di proposal.
-- Rendere tracciabile il perche` di ogni raccomandazione.
+- `apple-it/`: asset/reference Apple da mantenere.
+- `frontend/`: UI Next.js (Overview, Fit, login).
+- `backend/`: API matcher (`/api/horizon-matcher/*`).
+- `scripts/`: avvio e pulizia workspace.
+- `runtime/`: log/report/snapshot locali.
+- `docs/`: criteri di ordine e manutenzione.
 
-## Struttura cartelle
+## Avvio (comando unico)
 
-- `backend/`: API FastAPI, servizi di matching/report, modelli DB, test.
-- `frontend/`: interfaccia Next.js (workspace cluster, fit, report, call viewer).
-- `docs/`: documentazione tecnica e piano evolutivo V2.
-- `infra/`: compose/template infrastrutturali.
-- `scripts/`: utility operative (avvio/pulizia).
-- `runtime/`: output runtime locali (log/report/snapshot).
-- `reference/`: materiale di riferimento non runtime.
-
-## Avvio rapido
-
-1. Backend: `http://127.0.0.1:8000`
-2. Frontend: `http://localhost:3000`
-3. OpenAPI: `http://127.0.0.1:8000/docs`
-
-Comando unico dalla root del progetto:
+Dalla root:
 
 ```bash
 ./start.sh
 ```
 
-## Note di manutenzione
+Lo script avvia:
 
-- Esegui pulizia artefatti locali con:
+- Frontend: `http://localhost:3000`
+- Backend API/OpenAPI: `http://localhost:8000/docs`
+
+## Matcher: dati e rigenerazione indice
+
+Il backend usa `backend/data/horizon_matcher/` come data dir.
+
+Per rigenerare parser + indice manualmente:
+
+```bash
+cd backend
+.venv/bin/python scripts/horizon_matcher_ingest.py
+.venv/bin/python scripts/horizon_matcher_embed.py
+```
+
+In alternativa puoi caricare un PDF direttamente dalla UI Fit.
+
+## Pulizia workspace
 
 ```bash
 ./scripts/clean-workspace.sh
 ```
-
-- Gli artefatti runtime/build non devono finire nel codice sorgente.
