@@ -30,6 +30,7 @@ class HorizonMatcherScoreBreakdownOut(BaseModel):
     trl_score: float
     eligibility_score: float
     constraints_score: float
+    weighted_contributions: dict[str, float] = Field(default_factory=dict)
     weights_used: dict[str, float]
 
 
@@ -56,9 +57,11 @@ class HorizonMatcherScoreOut(BaseModel):
 
 class HorizonMatcherUploadOut(BaseModel):
     filename: str
+    files_processed: int = 1
     calls_parsed: int
     indexed_vectors: int
     detected_cluster: str | None = None
     suggested_cluster_id: str | None = None
     cluster_distribution: dict[str, int] = Field(default_factory=dict)
+    quality_summary: dict[str, Any] = Field(default_factory=dict)
     status: dict[str, Any]

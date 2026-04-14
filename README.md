@@ -41,6 +41,13 @@ cd backend
 .venv/bin/python scripts/horizon_matcher_embed.py
 ```
 
+Per ingestione multi-cluster (più PDF in un unico dataset):
+
+```bash
+.venv/bin/python scripts/horizon_matcher_ingest.py /path/wp-4.pdf /path/wp-5.pdf /path/wp-6.pdf
+.venv/bin/python scripts/horizon_matcher_embed.py
+```
+
 In alternativa puoi caricare un PDF direttamente dalla UI Fit.
 
 ## Pulizia workspace

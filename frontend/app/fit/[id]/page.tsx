@@ -267,11 +267,14 @@ function SpiderFull({ axes }: { axes: Record<string, number> }) {
 
 // Score breakdown — shows weight contribution of each component
 function ScoreBreakdown({ breakdown }: { breakdown: HorizonMatcherScoreBreakdown }) {
+  const wSemantic = (breakdown.weights_used?.semantic ?? 0.5) * 100;
+  const wBm25 = (breakdown.weights_used?.bm25 ?? 0.3) * 100;
+  const wConstraints = (breakdown.weights_used?.constraints ?? 0.2) * 100;
   const rows = [
-    { label: 'Impact Match (A1)', key: 'impact_match' as const, weight: 25, desc: 'Missione aziendale vs Expected Outcomes (semantica)' },
-    { label: 'Technical Match (A2)', key: 'technical_match' as const, weight: 25, desc: 'Know-how tecnico vs Scope della call (semantica)' },
-    { label: 'BM25 Keyword', key: 'bm25_score' as const, weight: 30, desc: 'Overlap keyword con vocabolario tecnico UE' },
-    { label: 'Vincoli Tecnici', key: 'constraints_score' as const, weight: 20, desc: 'TRL delta + bonus eligibility (SME, SSH, FAIR, Gender)' },
+    { label: 'Impact Match (A1)', key: 'impact_match' as const, weight: Math.round(wSemantic / 2), desc: 'Missione aziendale vs Expected Outcomes (semantica)' },
+    { label: 'Technical Match (A2)', key: 'technical_match' as const, weight: Math.round(wSemantic / 2), desc: 'Know-how tecnico vs Scope della call (semantica)' },
+    { label: 'BM25 Keyword', key: 'bm25_score' as const, weight: Math.round(wBm25), desc: 'Overlap keyword con vocabolario tecnico UE' },
+    { label: 'Vincoli Tecnici', key: 'constraints_score' as const, weight: Math.round(wConstraints), desc: 'TRL delta + bonus eligibility (SME, SSH, FAIR, Gender)' },
   ];
   return (
     <div className="fit-breakdown">
@@ -295,7 +298,12 @@ function ScoreBreakdown({ breakdown }: { breakdown: HorizonMatcherScoreBreakdown
       })}
       <div className="fit-breakdown-footer">
         {breakdown.bm25_boost_applied && <span className="fit-breakdown-boost">✦ Boost keyword UE attivo (+15%)</span>}
-        <span>TRL score: {Math.round(breakdown.trl_score * 100)}% · Eligibility: {Math.round(breakdown.eligibility_score * 100)}%</span>
+        <span>
+          TRL score: {Math.round(breakdown.trl_score * 100)}% · Eligibility: {Math.round(breakdown.eligibility_score * 100)}%
+          {breakdown.weighted_contributions?.total !== undefined
+            ? ` · Totale pesato: ${Math.round((breakdown.weighted_contributions.total || 0) * 100)}%`
+            : ''}
+        </span>
       </div>
     </div>
   );
@@ -376,7 +384,7 @@ export default function FitPage() {
   const [fit, setFit] = useState<FitSummary | null>(null);
   const [topicFits, setTopicFits] = useState<TopicDecisionCardPreview[]>([]);
   const [otherTopicFits, setOtherTopicFits] = useState<TopicDecisionCardPreview[]>([]);
-  const [matcherStatus, setMatcherStatus] = useState<{ calls_json?: boolean; index_faiss?: boolean; metadata_json?: boolean } | null>(null);
+  const [matcherStatus, setMatcherStatus] = useState<{ calls_json?: boolean; index_faiss?: boolean; metadata_json?: boolean; qa_report_json?: boolean } | null>(null);
   const [uploadMessage, setUploadMessage] = useState('');
   const [uploading, setUploading] = useState(false);
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
@@ -423,7 +431,7 @@ export default function FitPage() {
   useEffect(() => { if (isHydrated) writeClusterStore({ clusterData }); }, [clusterData, isHydrated]);
   useEffect(() => { if (!cluster) { setFit(null); setTopicFits([]); setOtherTopicFits([]); setSelectedTopic(null); setFitError(''); } }, [cluster]);
   useEffect(() => {
-    apiGet<{ calls_json?: boolean; index_faiss?: boolean; metadata_json?: boolean }>('/api/horizon-matcher/status')
+    apiGet<{ calls_json?: boolean; index_faiss?: boolean; metadata_json?: boolean; qa_report_json?: boolean }>('/api/horizon-matcher/status')
       .then(setMatcherStatus)
       .catch(err => setFitError(`Matcher non disponibile: ${formatError(err)}`));
   }, []);
@@ -495,15 +503,33 @@ export default function FitPage() {
     t.toLowerCase().split(/[\n,;|]+/).map(x => x.trim()).filter(x => x.length >= 3).slice(0, 24);
 
   const onUploadPdf = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
     setUploading(true); setUploadMessage(''); setFitError('');
     try {
-      const fd = new FormData(); fd.append('file', file);
-      const up = await apiPostFormData<HorizonMatcherUploadResponse>('/api/horizon-matcher/upload-pdf', fd);
+      const fd = new FormData();
+      const multiUpload = files.length > 1;
+      if (multiUpload) {
+        files.forEach(file => fd.append('files', file));
+      } else {
+        fd.append('file', files[0]);
+      }
+      const up = await apiPostFormData<HorizonMatcherUploadResponse>(
+        multiUpload ? '/api/horizon-matcher/upload-pdfs' : '/api/horizon-matcher/upload-pdf',
+        fd
+      );
       const suggested = (up.suggested_cluster_id || '').toUpperCase() as ClusterId;
-      const target = CLUSTERS.includes(suggested) ? suggested : clusterId;
-      setMatcherStatus(up.status as { calls_json?: boolean; index_faiss?: boolean; metadata_json?: boolean });
-      setUploadMessage(`${up.filename} — ${up.calls_parsed} call${up.detected_cluster ? ` · ${up.detected_cluster}` : ''}`);
+      const target = !multiUpload && CLUSTERS.includes(suggested) ? suggested : clusterId;
+      setMatcherStatus(up.status as { calls_json?: boolean; index_faiss?: boolean; metadata_json?: boolean; qa_report_json?: boolean });
+      const filesProcessed = up.files_processed ?? files.length;
+      const anomalyCounts = (up.quality_summary?.anomaly_counts || {}) as Record<string, number>;
+      const dirtyCount = (anomalyCounts.expected_outcomes_contains_scope || 0) + (anomalyCounts.scope_contains_destination || 0);
+      setUploadMessage(
+        `${up.filename} — ${up.calls_parsed} call` +
+        `${filesProcessed > 1 ? ` · ${filesProcessed} file` : ''}` +
+        `${up.detected_cluster ? ` · ${up.detected_cluster}` : ''}` +
+        `${dirtyCount > 0 ? ` · ${dirtyCount} anomalie parser da rivedere` : ''}`
+      );
       setClusterData(prev => {
         const empty: ClusterData = {
           fileName: '', fileType: '', uploadedAt: '', fileText: '',
@@ -516,7 +542,8 @@ export default function FitPage() {
           ...prev,
           [target]: {
             ...(prev[target] ?? prev[clusterId] ?? empty),
-            fileName: file.name, fileType: file.type || 'application/pdf',
+            fileName: files.length === 1 ? files[0].name : `${files.length} Work Programme PDF`,
+            fileType: 'application/pdf',
             uploadedAt: new Date().toISOString(), fileText: '',
             extractedBy: 'horizon-matcher-ingest', extractedChars: 0, extractionError: '',
           },
@@ -556,7 +583,7 @@ export default function FitPage() {
     const bootTimer = window.setTimeout(() => setFitBooting(false), 950);
     try {
       await apiGet<{ status: string }>('/api/health');
-      const live = await apiGet<{ calls_json?: boolean; index_faiss?: boolean; metadata_json?: boolean }>('/api/horizon-matcher/status');
+      const live = await apiGet<{ calls_json?: boolean; index_faiss?: boolean; metadata_json?: boolean; qa_report_json?: boolean }>('/api/horizon-matcher/status');
       setMatcherStatus(live);
       if (!(live.calls_json && live.index_faiss && live.metadata_json))
         throw new Error('Carica un PDF Work Programme prima di avviare il fit.');
@@ -707,7 +734,7 @@ export default function FitPage() {
               <path d="M3.5 14v1.75A1.75 1.75 0 0 0 5.25 17.5h9.5a1.75 1.75 0 0 0 1.75-1.75V14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
             {uploading ? 'Caricamento...' : 'Carica PDF Work Programme'}
-            <input type="file" accept="application/pdf,.pdf" onChange={onUploadPdf} disabled={uploading} style={{ display: 'none' }} />
+            <input type="file" accept="application/pdf,.pdf" multiple onChange={onUploadPdf} disabled={uploading} style={{ display: 'none' }} />
           </label>
           {cluster?.fileName && (
             <button className="fit-remove-btn" onClick={removeFile} type="button">Rimuovi</button>
@@ -897,7 +924,7 @@ export default function FitPage() {
                   <span className="fit-rank-badge">#{idx + 1}</span>
                   <RecommendationBadge value={t.recommendation} />
                 </div>
-                <h4 className="fit-call-title">{t.topicTitle.slice(0, 72)}</h4>
+                <h4 className="fit-call-title" title={t.topicTitle}>{t.topicTitle}</h4>
                 {t.summary && <p className="fit-call-summary">{t.summary}</p>}
                 <div className="fit-call-body">
                   <SpiderMini axes={t.spiderAxes} />
@@ -934,7 +961,7 @@ export default function FitPage() {
                   <span className="fit-rank-badge fit-rank-badge--secondary">#{idx + 11}</span>
                   <RecommendationBadge value={t.recommendation} />
                 </div>
-                <h4 className="fit-call-title">{t.topicTitle.slice(0, 72)}</h4>
+                <h4 className="fit-call-title" title={t.topicTitle}>{t.topicTitle}</h4>
                 {t.summary && <p className="fit-call-summary">{t.summary}</p>}
                 <div className="fit-score-row"><span>Overall</span><strong>{Math.round(t.overallFit)}</strong></div>
                 <button className="fit-call-btn" onClick={() => openTopicDetail(t, idx + 10)}>
@@ -972,6 +999,14 @@ export default function FitPage() {
               )}
               {selectedTopic.topic.callData?.budget_indicative && (
                 <p className="fit-meta">Budget: {selectedTopic.topic.callData.budget_indicative}</p>
+              )}
+              {selectedTopic.topic.callData?.source_documents && selectedTopic.topic.callData.source_documents.length > 0 && (
+                <p className="fit-meta">
+                  Fonte: {selectedTopic.topic.callData.source_documents.join(', ')}
+                  {selectedTopic.topic.callData.source_pages && selectedTopic.topic.callData.source_pages.length > 0
+                    ? ` · p.${selectedTopic.topic.callData.source_pages.join(', ')}`
+                    : ''}
+                </p>
               )}
             </div>
 

@@ -205,9 +205,18 @@ def generate_justification(
     score_pct = int(round(reliability_score * 100))
 
     # ── Frase 1: score + identità call ──────────────────────────────────────
-    sentence_1 = (
-        f"Affidabilità del {score_pct}% per {call_id} '{title}'."
-    )
+    weighted = score_breakdown.get("weighted_contributions", {})
+    if {"semantic", "bm25", "constraints"}.issubset(weighted.keys()):
+        sentence_1 = (
+            f"Affidabilità del {score_pct}% per {call_id} '{title}' "
+            f"(semantica {weighted.get('semantic', 0)*100:.1f}pp + "
+            f"BM25 {weighted.get('bm25', 0)*100:.1f}pp + "
+            f"vincoli {weighted.get('constraints', 0)*100:.1f}pp)."
+        )
+    else:
+        sentence_1 = (
+            f"Affidabilità del {score_pct}% per {call_id} '{title}'."
+        )
 
     # ── Frase 2: componente dominante ────────────────────────────────────────
     dominant, dominant_val = _dominant_component(score_breakdown)
@@ -255,7 +264,21 @@ def generate_justification(
     # ── Frase 5: condizioni speciali (opzionale) ─────────────────────────────
     sentence_5 = _special_conditions_sentence(score_breakdown, call_data, company_profile)
 
+    source_docs = call_data.get("source_documents") or ([call_data.get("source_document")] if call_data.get("source_document") else [])
+    source_pages = call_data.get("source_pages") or []
+    source_sentence = None
+    if source_docs:
+        docs_txt = ", ".join(source_docs[:2])
+        pages_txt = ""
+        if source_pages:
+            pages_txt = f", pagine {', '.join(str(p) for p in source_pages[:5])}"
+            if len(source_pages) > 5:
+                pages_txt += "…"
+        source_sentence = f"Riferimento documento: {docs_txt}{pages_txt}."
+
     sentences = [sentence_1, sentence_2, sentence_3, sentence_4]
+    if source_sentence:
+        sentences.append(source_sentence)
     if sentence_5:
         sentences.append(sentence_5)
 

@@ -35,6 +35,7 @@ class HorizonMatcherEngine:
             "calls_json": Path(config["calls_json"]).exists(),
             "index_faiss": Path(config["faiss_index"]).exists(),
             "metadata_json": Path(config["metadata_json"]).exists(),
+            "qa_report_json": Path(config["qa_report"]).exists(),
             "audit_log": Path(config["audit_log"]).exists(),
         }
 
@@ -89,7 +90,8 @@ class HorizonMatcherEngine:
                 k: raw.get(k)
                 for k in [
                     "expected_outcomes", "scope", "budget_indicative",
-                    "deadline", "source_pages", "specific_conditions", "trl_range",
+                    "deadline", "source_pages", "source_document", "source_documents",
+                    "specific_conditions", "trl_range",
                 ]
             } if raw else None
             return {

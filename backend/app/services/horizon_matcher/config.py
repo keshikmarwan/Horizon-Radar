@@ -20,6 +20,7 @@ def get_matcher_config(data_dir: str | Path | None = None) -> dict:
         "weight_bm25": 0.30,
         "weight_constraints": 0.20,
         "embedding_model": "all-MiniLM-L6-v2",
+        "model_cache_dir": str(base / "models"),
         "bm25_boost_factor": 1.15,
         "bm25_boost_terms": [
             "ai", "artificial intelligence", "machine learning",
@@ -33,6 +34,7 @@ def get_matcher_config(data_dir: str | Path | None = None) -> dict:
         "calls_json": str(base / "calls.json"),
         "faiss_index": str(base / "index.faiss"),
         "metadata_json": str(base / "metadata.json"),
+        "qa_report": str(base / "qa_report.json"),
         "audit_log": str(base / "audit_log.jsonl"),
         "top_n": 10,
         "clusters": [
@@ -45,6 +47,7 @@ def get_matcher_config(data_dir: str | Path | None = None) -> dict:
             "coordination and support action": "CSA",
             "pre-commercial procurement": "PCP",
             "public procurement of innovative solutions": "PPI",
+            "programme co-fund action": "COFUND",
         },
     }
 

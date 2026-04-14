@@ -14,6 +14,9 @@ from typing import Optional
 
 import faiss
 import numpy as np
+
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
 from sentence_transformers import SentenceTransformer
 
 from .config import get_matcher_config
@@ -24,6 +27,55 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 CONFIG = get_matcher_config()
+
+
+def _resolve_cached_snapshot_path(model_name: str, cache_dir: str | None) -> str | None:
+    """
+    Risolve il path locale dello snapshot HF se il modello è già in cache.
+    """
+    if not cache_dir:
+        return None
+
+    repo_candidates = [model_name]
+    if "/" not in model_name:
+        repo_candidates.insert(0, f"sentence-transformers/{model_name}")
+
+    for repo in repo_candidates:
+        safe_repo = repo.replace("/", "--")
+        model_root = os.path.join(cache_dir, f"models--{safe_repo}")
+        refs_main = os.path.join(model_root, "refs", "main")
+        snapshots_root = os.path.join(model_root, "snapshots")
+
+        if os.path.isfile(refs_main):
+            with open(refs_main, "r", encoding="utf-8") as f:
+                rev = f.read().strip()
+            snapshot = os.path.join(snapshots_root, rev)
+            if os.path.isdir(snapshot):
+                return snapshot
+
+        if os.path.isdir(snapshots_root):
+            candidates = [
+                os.path.join(snapshots_root, d)
+                for d in os.listdir(snapshots_root)
+                if os.path.isdir(os.path.join(snapshots_root, d))
+            ]
+            if candidates:
+                return sorted(candidates)[-1]
+
+    return None
+
+
+def _load_embedding_model(model_name: str, cache_dir: str | None = None) -> SentenceTransformer:
+    """
+    Carica il modello embeddings usando prima il path snapshot locale.
+    """
+    local_snapshot = _resolve_cached_snapshot_path(model_name, cache_dir)
+    if local_snapshot:
+        logger.info("Caricamento modello da cache locale: %s", local_snapshot)
+        return SentenceTransformer(local_snapshot)
+
+    logger.info("Modello %s non trovato in cache locale: tentativo download.", model_name)
+    return SentenceTransformer(model_name, cache_folder=cache_dir)
 
 
 # ─── Utility ─────────────────────────────────────────────────────────────────
@@ -124,9 +176,10 @@ def build_index(calls_path: Optional[str] = None, config: dict | None = None) ->
 
     # ── Caricamento modello ──────────────────────────────────────────────────
     model_name = effective_config["embedding_model"]
+    cache_dir = effective_config.get("model_cache_dir")
     logger.info("Caricamento modello: %s (download automatico al primo avvio)", model_name)
     try:
-        model = SentenceTransformer(model_name)
+        model = _load_embedding_model(model_name, cache_dir=cache_dir)
     except Exception as exc:
         raise RuntimeError(
             f"Impossibile caricare il modello '{model_name}': {exc}\n"
@@ -159,7 +212,7 @@ def build_index(calls_path: Optional[str] = None, config: dict | None = None) ->
         embeddings_outcomes = model.encode(
             texts_outcomes,
             batch_size=32,
-            show_progress_bar=True,
+            show_progress_bar=False,
             convert_to_numpy=True,
         ).astype(np.float32)
 
@@ -167,7 +220,7 @@ def build_index(calls_path: Optional[str] = None, config: dict | None = None) ->
         embeddings_scope = model.encode(
             texts_scope,
             batch_size=32,
-            show_progress_bar=True,
+            show_progress_bar=False,
             convert_to_numpy=True,
         ).astype(np.float32)
     except Exception as exc:

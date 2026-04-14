@@ -11,17 +11,61 @@ tutti i valori intermedi e i pesi usati nel calcolo.
 """
 
 import logging
+import os
 from typing import Optional
+from pathlib import Path
 
 import faiss
 import numpy as np
 from rank_bm25 import BM25Okapi
+
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
 from sentence_transformers import SentenceTransformer
 
 from .config import get_matcher_config
 
 logger = logging.getLogger(__name__)
 CONFIG = get_matcher_config()
+
+
+def _resolve_cached_snapshot_path(model_name: str, cache_dir: str | None) -> str | None:
+    if not cache_dir:
+        return None
+
+    repo_candidates = [model_name]
+    if "/" not in model_name:
+        repo_candidates.insert(0, f"sentence-transformers/{model_name}")
+
+    for repo in repo_candidates:
+        model_root = Path(cache_dir) / f"models--{repo.replace('/', '--')}"
+        refs_main = model_root / "refs" / "main"
+        snapshots_root = model_root / "snapshots"
+
+        if refs_main.exists():
+            revision = refs_main.read_text(encoding="utf-8").strip()
+            snapshot = snapshots_root / revision
+            if snapshot.is_dir():
+                return str(snapshot)
+
+        if snapshots_root.is_dir():
+            candidates = sorted(p for p in snapshots_root.iterdir() if p.is_dir())
+            if candidates:
+                return str(candidates[-1])
+
+    return None
+
+
+def _load_embedding_model(model_name: str, cache_dir: str | None = None) -> SentenceTransformer:
+    """
+    Carica il modello di scoring preferendo uno snapshot locale già scaricato.
+    """
+    local_snapshot = _resolve_cached_snapshot_path(model_name, cache_dir)
+    if local_snapshot:
+        return SentenceTransformer(local_snapshot)
+
+    logger.info("Modello %s non presente in cache locale: tentativo download.", model_name)
+    return SentenceTransformer(model_name, cache_folder=cache_dir)
 
 
 # ─── Componente A — Similarità Semantica ─────────────────────────────────────
@@ -37,7 +81,11 @@ def _embed_query(model: SentenceTransformer, text: str) -> np.ndarray:
     Returns:
         Vettore float32 normalizzato, shape (1, dim)
     """
-    vec = model.encode([text], convert_to_numpy=True).astype(np.float32)
+    vec = model.encode(
+        [text],
+        convert_to_numpy=True,
+        show_progress_bar=False,
+    ).astype(np.float32)
     faiss.normalize_L2(vec)
     return vec
 
@@ -426,8 +474,9 @@ def calculate_reliability_fit(
 
     # ── Caricamento modello ──────────────────────────────────────────────────
     model_name = config.get("embedding_model", "all-MiniLM-L6-v2")
+    cache_dir = config.get("model_cache_dir")
     try:
-        model = SentenceTransformer(model_name)
+        model = _load_embedding_model(model_name, cache_dir=cache_dir)
     except Exception as exc:
         raise RuntimeError(
             f"Impossibile caricare il modello '{model_name}': {exc}"
@@ -471,6 +520,10 @@ def calculate_reliability_fit(
         )
         reliability_score = round(min(max(reliability_score, 0.0), 1.0), 4)
 
+        semantic_contribution = w_semantic * semantic_avg
+        bm25_contribution = w_bm25 * bm25_score
+        constraints_contribution = w_constraints * constraints_score
+
         spider_axes = _compute_spider_axes(
             company_profile, call,
             impact_match, technical_match,
@@ -497,6 +550,12 @@ def calculate_reliability_fit(
                 "trl_score": round(trl_score, 4),
                 "eligibility_score": round(eligibility_score, 4),
                 "constraints_score": round(constraints_score, 4),
+                "weighted_contributions": {
+                    "semantic": round(semantic_contribution, 4),
+                    "bm25": round(bm25_contribution, 4),
+                    "constraints": round(constraints_contribution, 4),
+                    "total": reliability_score,
+                },
                 "weights_used": {
                     "semantic": w_semantic,
                     "bm25": w_bm25,

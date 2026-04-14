@@ -7,6 +7,7 @@ export type HorizonMatcherScoreBreakdown = {
   trl_score: number;
   eligibility_score: number;
   constraints_score: number;
+  weighted_contributions?: Record<string, number>;
   weights_used: Record<string, number>;
 };
 
@@ -16,6 +17,8 @@ export type HorizonMatcherCallData = {
   budget_indicative?: string | null;
   deadline?: string | null;
   source_pages?: number[];
+  source_document?: string | null;
+  source_documents?: string[];
   specific_conditions?: Record<string, boolean>;
   trl_range?: string | null;
 };
@@ -43,10 +46,12 @@ export type HorizonMatcherResponse = {
 
 export type HorizonMatcherUploadResponse = {
   filename: string;
+  files_processed?: number;
   calls_parsed: number;
   indexed_vectors: number;
   detected_cluster?: string | null;
   suggested_cluster_id?: string | null;
   cluster_distribution?: Record<string, number>;
+  quality_summary?: Record<string, unknown>;
   status: Record<string, unknown>;
 };
