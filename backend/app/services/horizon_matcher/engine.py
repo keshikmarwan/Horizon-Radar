@@ -84,6 +84,14 @@ class HorizonMatcherEngine:
             raise HorizonMatcherError(f"Errore nel calcolo matcher: {exc}") from exc
 
         def map_result(item: dict[str, Any], justification: str) -> dict[str, Any]:
+            raw = item.get("call_data") or {}
+            call_data = {
+                k: raw.get(k)
+                for k in [
+                    "expected_outcomes", "scope", "budget_indicative",
+                    "deadline", "source_pages", "specific_conditions", "trl_range",
+                ]
+            } if raw else None
             return {
                 "call_id": item.get("call_id", ""),
                 "title": item.get("title", ""),
@@ -93,6 +101,7 @@ class HorizonMatcherEngine:
                 "score_breakdown": item.get("score_breakdown", {}),
                 "spider_axes": item.get("spider_axes", {}),
                 "justification": justification,
+                "call_data": call_data,
             }
 
         results = []

@@ -42,6 +42,7 @@ class HorizonMatcherResultOut(BaseModel):
     score_breakdown: HorizonMatcherScoreBreakdownOut
     spider_axes: dict[str, float]
     justification: str
+    call_data: dict[str, Any] | None = None
 
 
 class HorizonMatcherScoreOut(BaseModel):

@@ -10,6 +10,16 @@ export type HorizonMatcherScoreBreakdown = {
   weights_used: Record<string, number>;
 };
 
+export type HorizonMatcherCallData = {
+  expected_outcomes?: string | null;
+  scope?: string | null;
+  budget_indicative?: string | null;
+  deadline?: string | null;
+  source_pages?: number[];
+  specific_conditions?: Record<string, boolean>;
+  trl_range?: string | null;
+};
+
 export type HorizonMatcherResult = {
   call_id: string;
   title: string;
@@ -19,6 +29,7 @@ export type HorizonMatcherResult = {
   score_breakdown: HorizonMatcherScoreBreakdown;
   spider_axes: Record<string, number>;
   justification: string;
+  call_data?: HorizonMatcherCallData | null;
 };
 
 export type HorizonMatcherResponse = {

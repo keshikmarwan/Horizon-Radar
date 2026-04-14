@@ -22,10 +22,10 @@ const sections: PromoSection[] = [
     subtitle: 'Un punto di ingresso unico: visione strategica e accesso diretto al motore di fit.',
     tone: 'dark',
     backgroundImage: '/images/IDG_GBionics_render_008_BtCLqTNyl7f5ludR7pe3t.jpg',
-    backgroundPosition: 'center 10%',
-    backgroundSize: '92% auto',
+    backgroundPosition: 'center 18%',
+    backgroundSize: 'cover',
     primary: { label: 'Apri Overview', href: '/' },
-    secondary: { label: 'Vai al Fit', href: '/cluster/CL1' },
+    secondary: { label: 'Vai al Fit', href: '/fit/CL1' },
   },
   {
     eyebrow: 'Fit',
@@ -33,10 +33,10 @@ const sections: PromoSection[] = [
     subtitle: 'Upload del Work Programme, profiling azienda e ranking call nello stesso workspace operativo.',
     tone: 'dark',
     backgroundImage: '/images/IDG_GBionics_render_021_rK-sZdFO9s-rgTKZOlOl6.jpg',
-    backgroundPosition: 'center 16%',
-    backgroundSize: '90% auto',
-    primary: { label: 'Apri Fit', href: '/cluster/CL1' },
-    secondary: { label: 'Vai a CL2', href: '/cluster/CL2' },
+    backgroundPosition: 'center 22%',
+    backgroundSize: 'cover',
+    primary: { label: 'Apri Fit', href: '/fit/CL1' },
+    secondary: { label: 'Esplora CL2', href: '/fit/CL2' },
   },
 ];
 
@@ -46,8 +46,8 @@ export default function DashboardPage() {
     if (!panels.length) return;
     const engageTimers = new Map<HTMLElement, number>();
     const engaged = new WeakSet<HTMLElement>();
-    const IN_VIEW_THRESHOLD = 0.68;
-    const TIME_TO_ENGAGE_MS = 260;
+    const IN_VIEW_THRESHOLD = 0.42;
+    const TIME_TO_ENGAGE_MS = 120;
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -96,9 +96,12 @@ export default function DashboardPage() {
           style={{
             ...(section.backgroundImage
               ? {
-                  backgroundImage: `linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.38) 100%), url(${section.backgroundImage})`,
-                  backgroundPosition: section.backgroundPosition || 'center 14%',
-                  backgroundSize: section.backgroundSize || '92% auto',
+                  backgroundImage: [
+                    'linear-gradient(160deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.24) 42%, rgba(0,0,0,0.72) 100%)',
+                    `url(${section.backgroundImage})`,
+                  ].join(', '),
+                  backgroundPosition: section.backgroundPosition || 'center 18%',
+                  backgroundSize: section.backgroundSize || 'cover',
                 }
               : {}),
             '--section-index': idx,

@@ -65,6 +65,23 @@ CLUSTER_KEYWORDS = {
     "Manufacturing": ["manufacturing", "industry", "production", "factory", "material"],
 }
 
+# All known section header names — used to detect section boundaries
+KNOWN_SECTION_NAMES = [
+    "expected outcomes", "expected outcome", "expected impact",
+    "scope", "specific conditions", "specific condition",
+    "indicative budget", "budget", "deadline", "opening date",
+    "type of action", "funding rate", "eligibility conditions",
+    "eligibility condition", "activities", "technology readiness level",
+    "topic description", "proposals addressing", "keywords",
+    "implementation", "justification",
+]
+
+# Compiled boundary pattern (used in _extract_section)
+_SECTION_BOUNDARY = re.compile(
+    r"^(?:" + "|".join(re.escape(s) for s in KNOWN_SECTION_NAMES) + r")\s*:?\s*$",
+    re.IGNORECASE,
+)
+
 SECTION_HEADERS = re.compile(
     r"expected\s+outcomes?|expected\s+impact|scope|specific\s+conditions?|"
     r"budget|indicative\s+budget|deadline|opening\s+date",
@@ -188,25 +205,71 @@ def _extract_section(text: str, section_name: str) -> Optional[str]:
     """
     Estrae il contenuto di una sezione specifica dal testo della call.
 
-    Cerca l'intestazione della sezione e restituisce il testo fino alla
-    prossima intestazione di sezione.
+    Usa un approccio riga per riga: trova l'header della sezione (con o senza
+    due punti, su riga propria o inline) e raccoglie il testo fino alla
+    prossima sezione nota o al prossimo ID call.
 
     Args:
         text: testo grezzo della call
         section_name: nome della sezione da cercare (es. "Expected Outcomes")
 
     Returns:
-        Testo della sezione o None se non trovata
+        Testo della sezione o None se non trovata / troppo breve
     """
-    pattern = re.compile(
-        rf"(?i)({re.escape(section_name)}[s]?\s*[\n:]*)(.*?)(?=\n[A-Z][^\n]{{5,}}:|\Z)",
-        re.DOTALL,
+    lines = text.split("\n")
+    start_idx: Optional[int] = None
+    inline_prefix = ""
+
+    # Pattern flessibile: "Expected Outcomes" / "Expected Outcome" / con ":" finale
+    header_exact = re.compile(
+        rf"^\s*{re.escape(section_name)}s?\s*:?\s*$", re.IGNORECASE
     )
-    match = pattern.search(text)
-    if match:
-        content = match.group(2).strip()
-        return content if content else None
-    return None
+    header_inline = re.compile(
+        rf"^\s*{re.escape(section_name)}s?\s*:\s*(.+)", re.IGNORECASE
+    )
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if header_exact.match(stripped):
+            start_idx = i + 1
+            break
+        m = header_inline.match(stripped)
+        if m:
+            inline_prefix = m.group(1).strip()
+            start_idx = i + 1
+            break
+
+    # Fallback: cerca il nome della sezione ovunque nella riga
+    # (utile per PDF con rientri o formattazione non standard)
+    if start_idx is None:
+        loose = re.compile(
+            rf"(?i){re.escape(section_name)}s?\s*:?\s*$"
+        )
+        for i, line in enumerate(lines):
+            if loose.search(line.strip()):
+                start_idx = i + 1
+                break
+
+    if start_idx is None:
+        return None
+
+    content_parts: list[str] = []
+    if inline_prefix:
+        content_parts.append(inline_prefix)
+
+    for line in lines[start_idx:]:
+        stripped = line.strip()
+        # Stop at known section boundary
+        if stripped and _SECTION_BOUNDARY.match(stripped):
+            break
+        # Stop at a new call ID
+        if stripped and CALL_ID_PATTERN.match(stripped):
+            break
+        content_parts.append(line)
+
+    content = "\n".join(content_parts).strip()
+    # Require at least 15 chars to avoid empty/garbage extractions
+    return content if len(content) >= 15 else None
 
 
 def _extract_budget(text: str) -> Optional[str]:

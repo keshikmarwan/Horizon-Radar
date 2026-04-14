@@ -4,12 +4,22 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 
 export function Header() {
   const pathname = usePathname();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const links = [
     { href: '/', label: 'Overview' },
-    { href: '/cluster/CL1', label: 'Fit' },
+    { href: '/fit/CL1', label: 'Fit' },
   ];
 
   const logout = async () => {
@@ -19,8 +29,11 @@ export function Header() {
 
   return (
     <>
-      <div className="apple-info-strip">Horizon Radar Workspace</div>
-      <header className="apple-shell-header">
+      <div className="apple-info-strip">
+        <span className="apple-info-strip-dot" />
+        Horizon Radar Workspace
+      </div>
+      <header className={`apple-shell-header${scrolled ? ' is-scrolled' : ''}`}>
         <nav className="apple-shell-nav" aria-label="Main navigation">
           <Link className="apple-shell-brand" href="/" aria-label="Horizon Radar Home">
             <Image src="/images/logo.png" alt="Horizon Radar Logo" width={28} height={28} />
@@ -29,9 +42,8 @@ export function Header() {
             {links.map((link) => {
               const isHome = link.href === '/';
               const isActive = isHome ? pathname === '/' : pathname === link.href || pathname.startsWith(`${link.href}/`);
-              const activeClass = isActive ? 'apple-shell-link active' : 'apple-shell-link';
               return (
-                <Link key={link.href} className={activeClass} href={link.href}>
+                <Link key={link.href} className={isActive ? 'apple-shell-link active' : 'apple-shell-link'} href={link.href}>
                   {link.label}
                 </Link>
               );
