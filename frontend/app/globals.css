@@ -2790,7 +2790,7 @@ body::before {
 
 .apple-shell-header {
   position: fixed;
-  top: 28px;
+  top: 0;
   left: 0;
   right: 0;
   z-index: 55;
@@ -2865,13 +2865,13 @@ body::before {
 }
 
 .container {
-  padding-top: 6.9rem;
+  padding-top: 5.2rem;
 }
 
 .apple-page-main {
   position: relative;
   width: 100%;
-  min-height: calc(100vh - 72px);
+  min-height: calc(100vh - 44px);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.015) 100%),
     #070708;
@@ -4462,6 +4462,10 @@ body::before {
   color: rgba(255, 255, 255, 0.48);
   letter-spacing: 0.02em;
 }
+.fit-rec-meta {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.42);
+}
 
 /* Explanation list */
 .fit-explanation {
@@ -4649,6 +4653,20 @@ body::before {
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.35);
 }
+.fit-reasoning-trace {
+  margin: 0;
+  padding: 0.95rem;
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(8, 12, 20, 0.82);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.75rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
 /* ── Full spider (detail view) ───────────────────────────────────────────── */
 .spider-full {
@@ -4728,6 +4746,10 @@ body::before {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.3);
 }
+.fit-breakdown-desc--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: rgba(255, 255, 255, 0.42);
+}
 .fit-breakdown-footer {
   display: flex;
   flex-wrap: wrap;
@@ -4783,6 +4805,34 @@ body::before {
   font-size: 0.74rem;
   color: rgba(255, 255, 255, 0.35);
   flex-basis: 100%;
+}
+.fit-budget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem;
+}
+.fit-budget-field {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.58);
+}
+.fit-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f5f5f7;
+  padding: 0.75rem 0.85rem;
+  font: inherit;
+}
+.fit-input::placeholder {
+  color: rgba(255, 255, 255, 0.28);
+}
+.fit-input:focus {
+  outline: none;
+  border-color: rgba(10, 132, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
 }
 .fit-flags-row {
   display: flex;

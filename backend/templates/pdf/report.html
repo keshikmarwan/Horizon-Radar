@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 20mm 14mm 16mm 14mm;
+      @top-center { content: element(page-header); }
+      @bottom-left { content: element(page-footer); }
+      @bottom-right { content: "Pagina " counter(page) " / " counter(pages); color: #475569; font-size: 9px; }
+    }
+
+    :root {
+      --blue: #003399;
+      --gold: #FFD700;
+      --ink: #1F2937;
+      --soft: #F8FAFC;
+      --line: #d6deef;
+      --go: #15803d;
+      --watch: #c2410c;
+      --nogo: #b42318;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--ink);
+      font-size: 11.2px;
+      line-height: 1.45;
+      background: #fff;
+    }
+
+    .running-header {
+      position: running(page-header);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--gold);
+      padding: 4px 0 8px;
+      color: var(--blue);
+      font-weight: 700;
+      font-size: 10px;
+    }
+    .running-header .left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-mark {
+      width: 18px;
+      height: 18px;
+      display: block;
+      object-fit: contain;
+    }
+
+    .running-footer {
+      position: running(page-footer);
+      color: #475569;
+      font-size: 9px;
+    }
+
+    .page-break { page-break-after: always; }
+
+    .cover {
+      min-height: 252mm;
+      border: 1px solid #c9d7f5;
+      border-radius: 18px;
+      padding: 14mm;
+      background:
+        repeating-linear-gradient(146deg, rgba(0, 51, 153, 0.045) 0px, rgba(0, 51, 153, 0.045) 2px, transparent 2px, transparent 16px),
+        linear-gradient(165deg, #ffffff 0%, #f7faff 58%, #eef4ff 100%);
+      position: relative;
+    }
+
+    .cover-logos {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 18mm;
+    }
+
+    .logo-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid #d6e0f4;
+      border-radius: 18px;
+      background: #fff;
+      padding: 10px 12px;
+      box-shadow: 0 8px 20px rgba(0, 51, 153, 0.07);
+      min-height: 60px;
+    }
+    .logo-card--ec { min-width: 210px; }
+    .logo-card--gb {
+      background: linear-gradient(135deg, #0f172a 0%, #102b61 100%);
+      border-color: #163b8b;
+    }
+    .logo-card .title {
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .logo-card .sub {
+      color: #52637e;
+      font-size: 8px;
+      line-height: 1.2;
+    }
+    .logo-card--gb .title { color: #ffffff; }
+    .logo-card--gb .sub { color: #bfdbfe; }
+    .logo-asset {
+      display: block;
+      object-fit: contain;
+      object-position: center;
+      flex: 0 0 auto;
+    }
+    .logo-asset--ec { width: 76px; height: 38px; }
+    .logo-asset--gb {
+      width: 42px;
+      height: 42px;
+      padding: 4px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .cover-title {
+      text-align: center;
+      margin-top: 18mm;
+      color: var(--blue);
+      font-size: 40px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 1.4px;
+    }
+    .cover-subtitle {
+      margin: 8mm auto 0;
+      text-align: center;
+      font-size: 18px;
+      max-width: 84%;
+      color: #1e3a8a;
+      font-weight: 500;
+    }
+    .cover-cluster {
+      text-align: center;
+      margin-top: 6mm;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .cover-meta {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 16mm;
+      text-align: center;
+      color: #475569;
+      font-size: 11px;
+    }
+    .cover-bottom {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 8mm;
+      text-align: center;
+      color: #64748b;
+      font-size: 9px;
+    }
+
+    .section-title {
+      margin: 0 0 10px;
+      color: var(--blue);
+      font-size: 19px;
+      font-weight: 800;
+      border-bottom: 1px solid var(--gold);
+      padding-bottom: 5px;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .kpi-value {
+      color: var(--blue);
+      font-size: 34px;
+      font-weight: 900;
+      line-height: 1;
+      margin-top: 5px;
+    }
+    .kpi-label { color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+    .top3-item { margin-bottom: 8px; }
+    .top3-row { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+
+    .badge {
+      border-radius: 999px;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.35px;
+      padding: 3px 9px;
+      min-width: 52px;
+      text-align: center;
+    }
+    .badge.go { background: var(--go); }
+    .badge.watch { background: var(--watch); }
+    .badge.nogo { background: var(--nogo); }
+
+    .bar-row { display: grid; grid-template-columns: 28px 1fr 44px; gap: 7px; align-items: center; margin: 4px 0; }
+    .bar-track { height: 10px; border-radius: 999px; background: #edf2ff; overflow: hidden; }
+    .bar-fill { height: 10px; background: linear-gradient(90deg, #003399, #1d4ed8); }
+
+    .call-section { page-break-after: always; }
+    .call-section:last-of-type { page-break-after: auto; }
+
+    .call-head {
+      border-left: 4px solid var(--blue);
+      border-radius: 12px;
+      background: #f8fbff;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .call-head-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+    .call-title { font-size: 14px; font-weight: 700; color: #0f172a; margin: 5px 0 2px; }
+    .call-score { color: #475569; font-size: 10px; }
+
+    .lead-section {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--soft);
+      padding: 14px;
+      margin-bottom: 12px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .lead-title { color: var(--blue); font-size: 14px; font-weight: 800; margin: 0 0 6px; }
+    .lead-text { font-size: 12px; line-height: 1.72; }
+
+    .quote-box {
+      border: 1px solid #f6dd88;
+      border-radius: 12px;
+      background: #fff9e8;
+      padding: 8px 9px;
+      font-style: italic;
+      margin-top: 7px;
+    }
+
+    .pair-box { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+    .warn-box, .ok-box {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 12px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .warn-box h4, .ok-box h4 { margin: 0 0 5px; font-size: 12px; }
+    .warn-box h4 { color: #991b1b; }
+    .ok-box h4 { color: #166534; }
+
+    ul { margin: 5px 0 0 16px; padding: 0; }
+    li { margin: 2px 0; }
+
+    .tech-wrap {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      padding: 12px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .tech-title { color: var(--blue); font-size: 13px; font-weight: 800; margin: 0 0 6px; }
+
+    .tech-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    th, td { border: 1px solid #d8e2f1; padding: 4px 6px; }
+    th { background: #eff4ff; color: #1e3a8a; font-weight: 700; }
+
+    .small-note { color: #475569; font-size: 10px; margin-top: 6px; }
+
+    .outcomes-scope { display: block; margin-top: 12px; }
+    .text-box {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      background: #fcfdff;
+      margin-bottom: 10px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .text-box h5 { margin: 0 0 5px; color: var(--blue); font-size: 12px; }
+    .text-content {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .disclaimer-wrap {
+      min-height: 235mm;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(175deg, #fff 0%, #f9fbff 100%);
+      padding: 14mm;
+      position: relative;
+    }
+    .disclaimer-box {
+      border: 1px solid #d7e0ef;
+      border-radius: 18px;
+      background: #fff;
+      padding: 12px;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+    .sign {
+      margin-top: 26mm;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .bottom-hr {
+      position: absolute;
+      left: 14mm;
+      bottom: 12mm;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #475569;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="running-header">
+    <div class="left">
+      <img class="header-mark" src="{{ hr_logo_src }}" alt="Horizon Radar" />
+      <span>Horizon Radar • Report Strategico • Generative Bionics</span>
+    </div>
+    <span>{{ cluster_id }}</span>
+  </div>
+  <div class="running-footer">Horizon Radar • AHP + Gurobi LP</div>
+
+  <section class="cover page-break">
+    <div class="cover-logos">
+      <div class="logo-card logo-card--ec">
+        <img class="logo-asset logo-asset--ec" src="{{ ec_logo_src }}" alt="Horizon Europe" />
+        <div>
+          <div class="title">HORIZON EUROPE</div>
+          <div class="sub">Research & Innovation Framework</div>
+        </div>
+      </div>
+
+      <div class="logo-card logo-card--gb">
+        <img class="logo-asset logo-asset--gb" src="{{ gb_logo_src }}" alt="Generative Bionics" />
+        <div>
+          <div class="title">GENERATIVE BIONICS</div>
+          <div class="sub">Physical AI • Robotics Intelligence</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cover-title">GENERATIVE BIONICS</div>
+    <div class="cover-subtitle">Analisi Strategica del Fit con i Bandi Horizon Europe 2026-2027</div>
+    <div class="cover-cluster">{{ cluster_full_label }}</div>
+
+    <div class="cover-meta">
+      <div>Data generazione: {{ generated_at }}</div>
+      <div>Utente: {{ generated_by }}</div>
+    </div>
+    <div class="cover-bottom">Horizon Radar v1.1 • AHP + Gurobi LP</div>
+  </section>
+
+  <section class="page-break">
+    <h2 class="section-title">Executive Summary</h2>
+    <div class="grid-2" style="margin-bottom: 10px;">
+      <div class="panel">
+        <div class="kpi-label">Fit medio cluster</div>
+        <div class="kpi-value">{{ "%.2f"|format(executive_summary.average_fit) }}%</div>
+        <div class="kpi-label" style="margin-top: 10px;">Call analizzate</div>
+        <div class="kpi-value">{{ executive_summary.total_calls }}</div>
+      </div>
+
+      <div class="panel">
+        <div style="font-weight: 800; color: var(--blue); margin-bottom: 7px;">Top 3 call</div>
+        {% for item in executive_summary.top3 %}
+        <div class="top3-item">
+          <div class="top3-row">
+            <strong>#{{ item.rank }} • {{ item.call_id }}</strong>
+            <span class="badge {{ item.rec_class }}">{{ item.recommendation }}</span>
+          </div>
+          <div>{{ item.title_short }}</div>
+          <div style="color:#64748b;">{{ "%.1f"|format(item.fit_score_100) }} / 100</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel" style="text-align:center;">
+        <div style="font-weight: 800; color: var(--blue); margin-bottom: 4px;">Radar complessivo cluster</div>
+        <div>{{ executive_summary.overall_radar_svg | safe }}</div>
+      </div>
+
+      <div class="panel">
+        <div style="font-weight: 800; color: var(--blue); margin-bottom: 5px;">Distribuzione Top 10</div>
+        {% for value in executive_summary.chart_values %}
+        <div class="bar-row">
+          <span>#{{ loop.index }}</span>
+          <div class="bar-track"><div class="bar-fill" style="width: {{ (value / executive_summary.chart_max * 100) if executive_summary.chart_max > 0 else 0 }}%;"></div></div>
+          <strong>{{ "%.1f"|format(value) }}</strong>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {% for item in calls_detail %}
+  {% set call = item.call %}
+  {% set breakdown = item.breakdown %}
+  {% set call_data = item.call_data %}
+  <section class="call-section">
+    <div class="call-head">
+      <div class="call-head-top">
+        <strong>Rank #{{ item.rank }} • {{ item.call_id }}</strong>
+        <span class="badge {{ item.rec_class }}">{{ item.recommendation }}</span>
+      </div>
+      <div class="call-title">{{ item.title }}</div>
+      <div class="call-score">Fit score: {{ "%.2f"|format(item.fit_score_100) }}/100 • Solver: {{ breakdown.get('status', 'Unknown') }}</div>
+    </div>
+
+    <div class="lead-section">
+      <h3 class="lead-title">Perché questa call ha preso {{ "%.0f"|format(item.fit_score_100) }}/100</h3>
+      <div class="lead-text">{{ item.justification_text }}</div>
+      {% for quote in item.quotes %}
+      <div class="quote-box">“{{ quote }}”</div>
+      {% endfor %}
+    </div>
+
+    <div class="pair-box">
+      <div class="warn-box">
+        <h4>Gap principali da colmare</h4>
+        <ul>
+          {% for gap in item.gaps %}<li>⚠️ {{ gap }}</li>{% endfor %}
+        </ul>
+      </div>
+      <div class="ok-box">
+        <h4>Azioni concrete (prossimi 3-6 mesi)</h4>
+        <ul>
+          {% for action in item.actions %}<li>✅ {{ action }}</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="tech-wrap">
+      <div class="tech-title">Spiegazione Tecnica AHP + LP</div>
+      <div class="tech-grid">
+        <div>
+          <div style="font-weight:700; margin-bottom:4px; color:#334155;">Matrice AHP (pairwise)</div>
+          <table>
+            <tbody>
+              {% set matrix = (call.explanation or {}).get('ahp_detailed', {}).get('pairwise_matrix', []) %}
+              {% for row in matrix %}
+              <tr>{% for cell in row %}<td>{{ "%.3f"|format(cell) }}</td>{% endfor %}</tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <div style="font-weight:700; margin:7px 0 4px; color:#334155;">Pre-LP vs Post-LP</div>
+          <table>
+            <thead><tr><th>Criterio</th><th>Peso</th><th>Pre-LP</th><th>Post-LP</th><th>Breakdown</th></tr></thead>
+            <tbody>
+              {% for crit in ['excellence','impact','implementation','tech_fit'] %}
+              <tr>
+                <td>{{ crit }}</td>
+                <td>{{ "%.4f"|format((breakdown.get('weights', {}) or {}).get(crit, 0)) }}</td>
+                <td>{{ "%.4f"|format((breakdown.get('local_scores', {}) or {}).get(crit, 0)) }}</td>
+                <td>{{ "%.4f"|format((breakdown.get('optimal_contributions', {}) or {}).get(crit, 0)) }}</td>
+                <td>{{ "%.4f"|format((breakdown.get('breakdown', {}) or {}).get(crit, 0)) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="small-note">CR: {{ "%.4f"|format(breakdown.get('cr', 0)) }} • {{ item.consistency_label }}</div>
+        </div>
+
+        <div>
+          <div class="panel" style="padding:6px; margin-bottom:8px; text-align:center;">
+            <div style="font-weight:700; color:#334155; margin-bottom:3px;">Pesi finali AHP</div>
+            {{ item.weights_pie_svg | safe }}
+          </div>
+          <div class="panel" style="padding:6px; text-align:center;">
+            <div style="font-weight:700; color:#334155; margin-bottom:3px;">Spider chart call</div>
+            {{ item.spider_svg | safe }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top: 10px;">
+      <div style="font-weight:700; color: var(--blue); margin-bottom:5px;">Vincoli LP applicati</div>
+      <ul>
+        {% for key, value in (breakdown.get('constraints_applied', {}) or {}).items() %}
+        <li><strong>{{ key }}</strong>: {{ value }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="outcomes-scope">
+      <div class="text-box">
+        <h5>Expected Outcomes</h5>
+        <div class="text-content">{{ call_data.get('expected_outcomes', 'n/d') }}</div>
+      </div>
+      <div class="text-box">
+        <h5>Scope</h5>
+        <div class="text-content">{{ call_data.get('scope', 'n/d') }}</div>
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+
+  <section>
+    <div class="disclaimer-wrap">
+      <h2 class="section-title">Disclaimer</h2>
+      <div class="disclaimer-box">
+        Report generato automaticamente da Horizon Radar v1.0 – Strumento decisionale basato su Analytic Hierarchy Process (AHP)
+        + Linear Programming (Gurobi). I risultati sono indicativi e supportano la prioritizzazione strategica.
+      </div>
+      <div class="sign">Generative Bionics R&amp;D Team<br/>{{ generated_at }}</div>
+      <div class="bottom-hr"><img class="header-mark" src="{{ hr_logo_src }}" alt="Horizon Radar" /> Horizon Radar</div>
+    </div>
+  </section>
+</body>
+</html>

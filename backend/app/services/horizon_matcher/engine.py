@@ -5,9 +5,8 @@ from typing import Any
 from datetime import datetime, timezone
 
 from .config import get_matcher_config
-from .embedder import load_index
+from .embedder import build_index, load_index
 from .explainer import generate_justification
-from .scorer import calculate_reliability_fit
 
 
 class HorizonMatcherError(Exception):
@@ -42,11 +41,13 @@ class HorizonMatcherEngine:
     def _ensure_dependencies(self) -> None:
         try:
             import faiss  # noqa: F401
+            import gurobipy  # noqa: F401
             import rank_bm25  # noqa: F401
+            import scipy  # noqa: F401
             import sentence_transformers  # noqa: F401
         except Exception as exc:
             raise HorizonMatcherError(
-                "Dipendenze mancanti: installa `faiss-cpu`, `sentence-transformers`, `rank_bm25` nel backend."
+                "Dipendenze mancanti: installa `faiss-cpu`, `sentence-transformers`, `rank_bm25`, `scipy` e `gurobipy` nel backend."
             ) from exc
 
     def _load_calls(self, calls_json_path: str) -> list[dict[str, Any]]:
@@ -65,10 +66,18 @@ class HorizonMatcherEngine:
     def score(self, profile: dict[str, Any], top_n: int = 10) -> dict[str, Any]:
         self._ensure_dependencies()
         config = self._config()
+        try:
+            from .scorer import calculate_reliability_fit
+        except Exception as exc:
+            raise HorizonMatcherError(
+                "Il motore AHP + Gurobi non e' disponibile. Verifica installazione di `gurobipy` e licenza Gurobi."
+            ) from exc
 
         calls = self._load_calls(config["calls_json"])
 
         try:
+            # Build on-demand: upload PDF deve restare leggero.
+            build_index(calls_path=config["calls_json"], config=config)
             faiss_index, metadata = load_index(config=config)
         except Exception as exc:
             raise HorizonMatcherError(str(exc)) from exc
@@ -84,14 +93,14 @@ class HorizonMatcherEngine:
         except Exception as exc:
             raise HorizonMatcherError(f"Errore nel calcolo matcher: {exc}") from exc
 
-        def map_result(item: dict[str, Any], justification: str) -> dict[str, Any]:
+        def map_result(item: dict[str, Any], justification: str, explanation: dict[str, Any]) -> dict[str, Any]:
             raw = item.get("call_data") or {}
             call_data = {
                 k: raw.get(k)
                 for k in [
                     "expected_outcomes", "scope", "budget_indicative",
                     "deadline", "source_pages", "source_document", "source_documents",
-                    "specific_conditions", "trl_range",
+                    "specific_conditions", "trl_range", "trl_required",
                 ]
             } if raw else None
             return {
@@ -99,22 +108,24 @@ class HorizonMatcherEngine:
                 "title": item.get("title", ""),
                 "cluster": item.get("cluster"),
                 "type_of_action": item.get("type_of_action"),
-                "reliability_score": item.get("reliability_score", 0.0),
+                "fit_score": item.get("fit_score", 0.0),
+                "fit_score_100": item.get("fit_score_100", 0.0),
                 "score_breakdown": item.get("score_breakdown", {}),
                 "spider_axes": item.get("spider_axes", {}),
                 "justification": justification,
+                "explanation": explanation,
                 "call_data": call_data,
             }
 
         results = []
         for item in scored_calls[:top_n]:
-            justification, _audit = generate_justification(item, profile, config=config)
-            results.append(map_result(item, justification))
+            justification, _audit, explanation = generate_justification(item, profile, config=config)
+            results.append(map_result(item, justification, explanation))
 
         other_results = []
         for item in scored_calls[top_n:]:
-            justification, _audit = generate_justification(item, profile, config=config)
-            other_results.append(map_result(item, justification))
+            justification, _audit, explanation = generate_justification(item, profile, config=config)
+            other_results.append(map_result(item, justification, explanation))
 
         return {
             "generated_at": datetime.now(timezone.utc).isoformat(),

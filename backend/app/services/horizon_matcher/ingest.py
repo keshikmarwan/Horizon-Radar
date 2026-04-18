@@ -19,6 +19,7 @@ from typing import BinaryIO, Optional, Sequence, Union
 import pdfplumber
 
 from .config import get_matcher_config
+from .llm_extractor import extract_structured_data, merge_extraction_with_baseline
 
 logging.basicConfig(
     level=logging.INFO,
@@ -579,7 +580,7 @@ def _build_call_dict(
             call_id,
         )
 
-    return {
+    baseline = {
         "id": call_id,
         "title": title,
         "cluster": cluster,
@@ -596,6 +597,14 @@ def _build_call_dict(
         "source_documents": [source_document],
         "raw_text": raw_text,
     }
+
+    # LLM extraction (opzionale, con fallback automatico)
+    llm_data = extract_structured_data(call_id=call_id, raw_text=raw_text)
+    if llm_data:
+        logger.info("LLM extraction completata per %s", call_id)
+        return merge_extraction_with_baseline(baseline, llm_data)
+
+    return baseline
 
 
 def _score_call_occurrence(window: str) -> int:

@@ -1,140 +1,144 @@
 """
-scorer.py — Step 3: algoritmo di fit ibrido pesato
+scorer.py — motore ibrido AHP + Gurobi LP per Horizon Fit Analyzer.
 
-Implementa calculate_reliability_fit(), che combina:
-  Componente A (50%): similarità semantica via FAISS + sentence-transformers
-  Componente B (30%): BM25 keyword match con boost per termini tecnici UE
-  Componente C (20%): vincoli tecnici (TRL delta) + bonus eligibility
-
-Ogni punteggio è auditabile: il dizionario score_breakdown conserva
-tutti i valori intermedi e i pesi usati nel calcolo.
+Il file mantiene i segnali legacy come feature extractor interno e delega
+la decisione finale a un modello AHP + Linear Programming.
 """
+
+import numpy as np
+from scipy.linalg import eig
+import gurobipy as gp
+from gurobipy import GRB
+import json
+
+
+class AHPScorer:
+    DEFAULT_PAIRWISE = np.array([
+        [1,   3,   5,   2],
+        [1/3, 1,   3,   1],
+        [1/5, 1/3, 1,   0.5],
+        [0.5, 1,   2,   1]
+    ], dtype=float)
+
+    def __init__(self, pairwise_matrix=None):
+        self.matrix = pairwise_matrix if pairwise_matrix is not None else self.DEFAULT_PAIRWISE
+        self.weights, self.lambda_max, self.ci, self.cr = self._calculate_ahp()
+
+    def _calculate_ahp(self):
+        eigenvalues, eigenvectors = eig(self.matrix)
+        max_idx = np.argmax(np.real(eigenvalues))
+        priority = np.real(eigenvectors[:, max_idx])
+        priority = priority / np.sum(priority)
+        lambda_max = np.real(eigenvalues[max_idx])
+        n = self.matrix.shape[0]
+        ci = (lambda_max - n) / (n - 1)
+        ri_dict = {3: 0.58, 4: 0.90, 5: 1.12}
+        ri = ri_dict.get(n, 1.49)
+        cr = ci / ri if ri > 0 else 0
+        return priority, lambda_max, ci, cr
+
+
+class HybridAHPLPGurobiScorer:
+    def __init__(self, pairwise_matrix=None):
+        self.ahp = AHPScorer(pairwise_matrix)
+        self.weights = self.ahp.weights
+
+    def solve_lp(self, local_scores: dict, hard_constraints: dict) -> dict:
+        model = gp.Model("Horizon_Fit_Optimization")
+        model.setParam('OutputFlag', 0)
+
+        x = {
+            'excellence': model.addVar(lb=0, ub=local_scores['excellence'], name="x_excellence"),
+            'impact': model.addVar(lb=0, ub=local_scores['impact'], name="x_impact"),
+            'implementation': model.addVar(lb=0, ub=local_scores['implementation'], name="x_implementation"),
+            'tech_fit': model.addVar(lb=0, ub=local_scores['tech_fit'], name="x_tech_fit")
+        }
+
+        model.setObjective(
+            self.weights[0] * x['excellence'] +
+            self.weights[1] * x['impact'] +
+            self.weights[2] * x['implementation'] +
+            self.weights[3] * x['tech_fit'],
+            GRB.MAXIMIZE
+        )
+
+        if hard_constraints.get('trl_violation', False):
+            model.addConstr(x['excellence'] <= 0.3, name="TRL_hard")
+        if hard_constraints.get('budget_company_available', 0) < hard_constraints.get('budget_max', 999999999):
+            model.addConstr(x['implementation'] <= 0.4, name="Budget_hard")
+        if hard_constraints.get('sme_required', False) and not hard_constraints.get('sme_ok', False):
+            model.addConstr(x['implementation'] <= 0.2, name="SME_hard")
+        if hard_constraints.get('ssh_required', False):
+            model.addConstr(x['impact'] <= 0.5, name="SSH_hard")
+        if hard_constraints.get('gender_balance_required', False):
+            model.addConstr(x['implementation'] <= 0.6, name="Gender_hard")
+
+        model.optimize()
+
+        if model.status == GRB.OPTIMAL:
+            optimal_x = {k: float(v.X) for k, v in x.items()}
+            fit_score = float(model.ObjVal)
+            status_str = "Optimal"
+        else:
+            optimal_x = {k: 0.0 for k in x}
+            fit_score = 0.0
+            status_str = gp.GRB.statusDict.get(model.status, "Unknown")
+
+        breakdown = {
+            crit: round(self.weights[i] * optimal_x[crit], 4)
+            for i, crit in enumerate(['excellence', 'impact', 'implementation', 'tech_fit'])
+        }
+
+        return {
+            "fit_score": round(fit_score, 4),
+            "fit_score_100": round(fit_score * 100, 2),
+            "weights": {k: round(v, 4) for k, v in zip(['excellence','impact','implementation','tech_fit'], self.weights)},
+            "breakdown": breakdown,
+            "optimal_contributions": optimal_x,
+            "status": status_str,
+            "cr": round(self.ahp.cr, 4),
+            "consistency_ok": self.ahp.cr < 0.1,
+            "constraints_applied": hard_constraints,
+            "solver": "Gurobi"
+        }
+
 
 import logging
 import os
-from typing import Optional
-from pathlib import Path
+import re
+from typing import Any, Optional
 
 import faiss
-import numpy as np
 from rank_bm25 import BM25Okapi
 
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
-from sentence_transformers import SentenceTransformer
-
 from .config import get_matcher_config
+from .embedding_backend import EmbeddingBackend
 
 logger = logging.getLogger(__name__)
 CONFIG = get_matcher_config()
-
-
-def _resolve_cached_snapshot_path(model_name: str, cache_dir: str | None) -> str | None:
-    if not cache_dir:
-        return None
-
-    repo_candidates = [model_name]
-    if "/" not in model_name:
-        repo_candidates.insert(0, f"sentence-transformers/{model_name}")
-
-    for repo in repo_candidates:
-        model_root = Path(cache_dir) / f"models--{repo.replace('/', '--')}"
-        refs_main = model_root / "refs" / "main"
-        snapshots_root = model_root / "snapshots"
-
-        if refs_main.exists():
-            revision = refs_main.read_text(encoding="utf-8").strip()
-            snapshot = snapshots_root / revision
-            if snapshot.is_dir():
-                return str(snapshot)
-
-        if snapshots_root.is_dir():
-            candidates = sorted(p for p in snapshots_root.iterdir() if p.is_dir())
-            if candidates:
-                return str(candidates[-1])
-
-    return None
-
-
-def _load_embedding_model(model_name: str, cache_dir: str | None = None) -> SentenceTransformer:
-    """
-    Carica il modello di scoring preferendo uno snapshot locale già scaricato.
-    """
-    local_snapshot = _resolve_cached_snapshot_path(model_name, cache_dir)
-    if local_snapshot:
-        return SentenceTransformer(local_snapshot)
-
-    logger.info("Modello %s non presente in cache locale: tentativo download.", model_name)
-    return SentenceTransformer(model_name, cache_folder=cache_dir)
-
-
-# ─── Componente A — Similarità Semantica ─────────────────────────────────────
-
-def _embed_query(model: SentenceTransformer, text: str) -> np.ndarray:
-    """
-    Genera e normalizza L2 l'embedding di un testo query.
-
-    Args:
-        model: modello SentenceTransformer già caricato
-        text: testo da embeddare
-
-    Returns:
-        Vettore float32 normalizzato, shape (1, dim)
-    """
-    vec = model.encode(
-        [text],
-        convert_to_numpy=True,
-        show_progress_bar=False,
-    ).astype(np.float32)
+def _embed_query(backend: EmbeddingBackend, text: str) -> np.ndarray:
+    vec = backend.embed_text(text).astype(np.float32)
     faiss.normalize_L2(vec)
     return vec
 
 
 def _cosine_to_01(sim: float) -> float:
-    """
-    Normalizza cosine similarity da [-1, 1] a [0, 1].
-
-    Args:
-        sim: valore cosine similarity in [-1, 1]
-
-    Returns:
-        Valore normalizzato in [0, 1]
-    """
     return (sim + 1.0) / 2.0
 
 
 def _compute_semantic_scores(
-    company_profile: dict,
-    calls: list[dict],
+    company_profile: dict[str, Any],
+    calls: list[dict[str, Any]],
     faiss_index: faiss.Index,
     metadata: dict[int, str],
-    model: SentenceTransformer,
+    backend: EmbeddingBackend,
 ) -> dict[str, tuple[float, float]]:
-    """
-    Componente A — Similarità Semantica.
-
-    Calcola impact_match (A1) e technical_match (A2) per tutte le call
-    tramite ricerca FAISS. Il layout dell'indice è:
-      slot 2i   = outcomes della call i
-      slot 2i+1 = scope della call i
-
-    Args:
-        company_profile: profilo aziendale
-        calls: lista call da calls.json
-        faiss_index: indice FAISS già caricato
-        metadata: mapping int(faiss_slot) → call_id
-        model: modello SentenceTransformer
-
-    Returns:
-        Dict {call_id: (impact_match, technical_match)} in [0,1]
-    """
-    # Mappa call_id → indice posizione nel corpus (per trovare slot FAISS)
+    del metadata
     id_to_idx = {call["id"]: i for i, call in enumerate(calls)}
-
-    # A1: embed mission → cerca nei vettori outcomes (slot pari)
-    vec_mission = _embed_query(model, company_profile.get("mission", ""))
-    # A2: embed technical_knowhow → cerca nei vettori scope (slot dispari)
-    vec_tech = _embed_query(model, company_profile.get("technical_knowhow", ""))
+    vec_mission = _embed_query(backend, company_profile.get("mission", ""))
+    vec_tech = _embed_query(backend, company_profile.get("technical_knowhow", ""))
 
     n_total = faiss_index.ntotal
     results: dict[str, tuple[float, float]] = {}
@@ -143,281 +147,138 @@ def _compute_semantic_scores(
         cid = call["id"]
         idx = id_to_idx.get(cid)
         if idx is None:
-            logger.warning("Call %s non trovata nel metadata, salto.", cid)
             results[cid] = (0.5, 0.5)
             continue
 
         slot_outcomes = idx * 2
         slot_scope = idx * 2 + 1
-
         if slot_outcomes >= n_total or slot_scope >= n_total:
-            logger.warning(
-                "Call %s: slot FAISS %d/%d fuori range (%d totali). "
-                "Rigenera l'indice con python embedder.py.",
-                cid, slot_outcomes, slot_scope, n_total,
-            )
             results[cid] = (0.5, 0.5)
             continue
 
-        # Estrae i vettori direttamente dall'indice
         vec_outcomes = faiss_index.reconstruct(slot_outcomes).reshape(1, -1).astype(np.float32)
         vec_scope = faiss_index.reconstruct(slot_scope).reshape(1, -1).astype(np.float32)
-
-        # Prodotto interno = cosine similarity (vettori già normalizzati L2)
         impact_sim = float(np.dot(vec_mission, vec_outcomes.T).squeeze())
         tech_sim = float(np.dot(vec_tech, vec_scope.T).squeeze())
-
-        impact_match = _cosine_to_01(impact_sim)
-        technical_match = _cosine_to_01(tech_sim)
-
-        logger.debug(
-            "Call %s | impact_sim=%.4f → %.4f | tech_sim=%.4f → %.4f",
-            cid, impact_sim, impact_match, tech_sim, technical_match,
-        )
-        results[cid] = (impact_match, technical_match)
+        results[cid] = (_cosine_to_01(impact_sim), _cosine_to_01(tech_sim))
 
     return results
 
 
-# ─── Componente B — BM25 Keyword Match ───────────────────────────────────────
-
 def _tokenize(text: str) -> list[str]:
-    """
-    Tokenizza un testo in parole lowercase senza punteggiatura.
-
-    Args:
-        text: testo da tokenizzare
-
-    Returns:
-        Lista di token
-    """
-    import re
     return re.findall(r"\b\w+\b", text.lower())
 
 
 def _compute_bm25_scores(
-    company_profile: dict,
-    calls: list[dict],
+    company_profile: dict[str, Any],
+    calls: list[dict[str, Any]],
     boost_factor: float,
     boost_terms: list[str],
 ) -> dict[str, tuple[float, bool]]:
-    """
-    Componente B — BM25 Keyword Match con boost per termini tecnici UE.
-
-    Costruisce il corpus BM25 concatenando scope + expected_outcomes per
-    ogni call. La query è description + keywords. Applica un moltiplicatore
-    boost_factor alle call che condividono termini tecnici UE con la query.
-
-    Args:
-        company_profile: profilo aziendale
-        calls: lista call da calls.json
-        boost_factor: moltiplicatore boost (es. 1.15)
-        boost_terms: lista di termini tecnici UE per il boost
-
-    Returns:
-        Dict {call_id: (bm25_score_normalizzato, boost_applied)} in [0,1]
-    """
-    # Costruzione corpus
     corpus_texts = [
         (call.get("scope") or "") + " " + (call.get("expected_outcomes") or "")
         for call in calls
     ]
     tokenized_corpus = [_tokenize(t) for t in corpus_texts]
 
-    # Query
-    query_text = (
-        company_profile.get("description", "")
-        + " "
-        + " ".join(company_profile.get("keywords", []))
-    )
+    query_text = company_profile.get("description", "") + " " + " ".join(company_profile.get("keywords", []))
     query_tokens = _tokenize(query_text)
     query_lower = query_text.lower()
 
-    # Costruzione BM25
     try:
         bm25 = BM25Okapi(tokenized_corpus)
-    except Exception as exc:
-        logger.error("Errore costruzione BM25: %s", exc)
+    except Exception:
         return {call["id"]: (0.0, False) for call in calls}
 
     raw_scores = bm25.get_scores(query_tokens)
-
-    # Identifica quali boost_terms sono presenti nella query
     active_boost_terms = [term for term in boost_terms if term in query_lower]
-    logger.debug("Termini boost attivi nella query: %s", active_boost_terms)
 
-    # Applica boost alle call che contengono i boost_terms attivi nel loro testo
     boosted_scores = np.array(raw_scores, dtype=float)
-    boost_flags = []
-    for i, (call, corpus_text) in enumerate(zip(calls, corpus_texts)):
+    boost_flags: list[bool] = []
+    for i, corpus_text in enumerate(corpus_texts):
         corpus_lower = corpus_text.lower()
         has_boost = any(term in corpus_lower for term in active_boost_terms)
         if has_boost:
             boosted_scores[i] *= boost_factor
-            logger.debug("Boost applicato a %s (×%.2f)", call["id"], boost_factor)
         boost_flags.append(has_boost)
 
-    # Min-max normalization
-    max_score = boosted_scores.max()
-    if max_score > 0:
-        normalized = boosted_scores / max_score
-    else:
-        normalized = boosted_scores  # tutti zero
+    max_score = boosted_scores.max() if len(boosted_scores) else 0.0
+    normalized = boosted_scores / max_score if max_score > 0 else boosted_scores
 
-    results = {}
-    for i, call in enumerate(calls):
-        results[call["id"]] = (float(normalized[i]), boost_flags[i])
-        logger.debug("BM25 %s: raw=%.4f boost=%s norm=%.4f",
-                     call["id"], raw_scores[i], boost_flags[i], normalized[i])
+    return {
+        call["id"]: (float(normalized[i]), boost_flags[i])
+        for i, call in enumerate(calls)
+    }
 
-    return results
-
-
-# ─── Componente C — Vincoli Tecnici e Normativi ───────────────────────────────
 
 def _compute_trl_score(trl_required: Optional[int], trl_current: int) -> float:
-    """
-    Componente C1 — TRL Delta Score.
-
-    Calcola il punteggio di allineamento TRL in base alla differenza tra
-    il TRL richiesto dalla call e quello attuale dell'azienda.
-
-    Args:
-        trl_required: TRL numerico richiesto dalla call (None = non specificato)
-        trl_current: TRL attuale dell'azienda
-
-    Returns:
-        trl_score in [0, 1]
-    """
     if trl_required is None:
-        logger.debug("TRL non specificato → score neutro 0.6")
         return 0.6
 
     delta = trl_required - trl_current
     if delta <= 0:
-        score = 1.0
-    elif delta == 1:
-        score = 0.75
-    elif delta == 2:
-        score = 0.5
-    elif delta == 3:
-        score = 0.25
-    else:
-        score = 0.0
-
-    logger.debug("TRL delta=%d (req=%d, current=%d) → score=%.2f",
-                 delta, trl_required, trl_current, score)
-    return score
+        return 1.0
+    if delta == 1:
+        return 0.75
+    if delta == 2:
+        return 0.5
+    if delta == 3:
+        return 0.25
+    return 0.0
 
 
-def _compute_eligibility_score(company_profile: dict, call: dict) -> float:
-    """
-    Componente C2 — Eligibility Bonuses.
-
-    Assegna un bonus per ogni corrispondenza tra caratteristiche dell'azienda
-    e condizioni specifiche della call, normalizzato su 5 bonus possibili.
-
-    Args:
-        company_profile: profilo aziendale
-        call: dict della call da calls.json
-
-    Returns:
-        eligibility_score in [0, 1]
-    """
+def _compute_eligibility_score(company_profile: dict[str, Any], call: dict[str, Any]) -> float:
     conditions = call.get("specific_conditions", {})
     bonuses = 0
 
     if company_profile.get("is_sme") and conditions.get("sme_eligible"):
         bonuses += 1
-        logger.debug("  +1 bonus: SME eligible")
     if company_profile.get("ssh_capacity") and conditions.get("ssh_required"):
         bonuses += 1
-        logger.debug("  +1 bonus: SSH capacity")
     if company_profile.get("fair_compliant") and conditions.get("fair_data"):
         bonuses += 1
-        logger.debug("  +1 bonus: FAIR compliant")
     if company_profile.get("gender_dimension_active") and conditions.get("gender_dimension"):
         bonuses += 1
-        logger.debug("  +1 bonus: Gender dimension")
     if call.get("cluster") in company_profile.get("clusters_interest", []):
         bonuses += 1
-        logger.debug("  +1 bonus: cluster match (%s)", call.get("cluster"))
 
-    score = bonuses / 5.0
-    logger.debug("Eligibility bonuses=%d → score=%.2f", bonuses, score)
-    return score
+    return bonuses / 5.0
 
 
 def _compute_constraints_score(
-    company_profile: dict, call: dict
+    company_profile: dict[str, Any],
+    call: dict[str, Any],
 ) -> tuple[float, float, float]:
-    """
-    Componente C — Vincoli Tecnici e Normativi.
-
-    Combina TRL delta (60%) e eligibility bonuses (40%).
-
-    Args:
-        company_profile: profilo aziendale
-        call: dict della call
-
-    Returns:
-        (constraints_score, trl_score, eligibility_score)
-    """
-    trl_score = _compute_trl_score(
-        call.get("trl_required"), company_profile.get("trl_current", 5)
-    )
+    trl_score = _compute_trl_score(call.get("trl_required"), company_profile.get("trl_current", 5))
     eligibility_score = _compute_eligibility_score(company_profile, call)
     constraints_score = 0.6 * trl_score + 0.4 * eligibility_score
     return constraints_score, trl_score, eligibility_score
 
 
-# ─── Spider Axes ─────────────────────────────────────────────────────────────
-
 def _compute_spider_axes(
-    company_profile: dict,
-    call: dict,
+    company_profile: dict[str, Any],
+    call: dict[str, Any],
     impact_match: float,
     technical_match: float,
     trl_score: float,
     eligibility_score: float,
 ) -> dict[str, float]:
-    """
-    Calcola i 6 assi del radar chart scalati da 1 a 5.
-
-    La scala lineare è: 1 + score_[0,1] * 4
-
-    Args:
-        company_profile: profilo aziendale
-        call: dict della call
-        impact_match: score A1 in [0,1]
-        technical_match: score A2 in [0,1]
-        trl_score: score C1 in [0,1]
-        eligibility_score: score C2 in [0,1]
-
-    Returns:
-        Dict con 6 chiavi, valori in [1, 5]
-    """
     conditions = call.get("specific_conditions", {})
 
     def to_15(v: float) -> float:
         return round(1.0 + v * 4.0, 4)
 
-    # fair_compliance: 1.0 se entrambi, 0.5 se solo uno, 0.0 se nessuno
     fair_both = company_profile.get("fair_compliant") and conditions.get("fair_data")
     fair_one = company_profile.get("fair_compliant") or conditions.get("fair_data")
     fair_raw = 1.0 if fair_both else (0.5 if fair_one else 0.0)
 
-    # inclusion_ethics: media di ssh e gender, pesata con i requisiti della call
     ssh_score = float(company_profile.get("ssh_capacity", False))
     gender_score = float(company_profile.get("gender_dimension_active", False))
     ssh_req = float(conditions.get("ssh_required", False))
     gender_req = float(conditions.get("gender_dimension", False))
 
-    # Se la call non richiede né SSH né gender, usa la capacità interna come base
     if ssh_req + gender_req > 0:
-        inclusion_raw = (ssh_score * (1 + ssh_req) + gender_score * (1 + gender_req)) / (
-            2 + ssh_req + gender_req
-        )
+        inclusion_raw = (ssh_score * (1 + ssh_req) + gender_score * (1 + gender_req)) / (2 + ssh_req + gender_req)
     else:
         inclusion_raw = (ssh_score + gender_score) / 2.0
 
@@ -431,108 +292,127 @@ def _compute_spider_axes(
     }
 
 
-# ─── Main function ───────────────────────────────────────────────────────────
+def _parse_budget_value(raw_budget: Any) -> float:
+    if raw_budget is None:
+        return 999999999.0
+    if isinstance(raw_budget, (int, float)):
+        return float(raw_budget)
 
-def calculate_reliability_fit(
-    company_profile: dict,
-    calls: list[dict],
-    faiss_index: faiss.Index,
-    metadata: dict[int, str],
-    config: dict,
-) -> list[dict]:
-    """
-    Calcola il Reliability Score per ogni call rispetto al profilo aziendale.
+    text = str(raw_budget).strip().lower()
+    if not text:
+        return 999999999.0
 
-    Combina tre componenti pesate:
-      A (default 50%): similarità semantica mission/outcomes + tech/scope
-      B (default 30%): BM25 keyword match con boost per termini tecnici UE
-      C (default 20%): TRL delta + eligibility bonuses
+    multiplier = 1.0
+    if "billion" in text:
+        multiplier = 1_000_000_000.0
+    elif "million" in text or "m eur" in text or "meur" in text or "m€" in text:
+        multiplier = 1_000_000.0
 
-    Ogni risultato include score_breakdown auditabile con tutti i valori
-    intermedi e i pesi effettivamente usati nel calcolo.
+    cleaned = text.replace(",", ".")
+    match = re.search(r"(\d+(?:\.\d+)?)", cleaned)
+    if not match:
+        digits = re.sub(r"[^\d]", "", text)
+        return float(digits) if digits else 999999999.0
+    return float(match.group(1)) * multiplier
 
-    Args:
-        company_profile: dict con descrizione, TRL, cluster, flag, keywords
-        calls: lista di dict da calls.json
-        faiss_index: indice FAISS caricato con load_index()
-        metadata: mapping int(faiss_slot) → call_id
-        config: dict di configurazione (da CONFIG in config.py)
 
-    Returns:
-        Lista di dict ordinata per reliability_score decrescente, ciascuno con:
-        call_id, title, cluster, type_of_action, reliability_score,
-        score_breakdown, spider_axes, call_data
-    """
-    w_semantic = config.get("weight_semantic", 0.50)
-    w_bm25 = config.get("weight_bm25", 0.30)
-    w_constraints = config.get("weight_constraints", 0.20)
+def _build_local_scores(
+    impact_match: float,
+    technical_match: float,
+    semantic_score: float,
+    bm25_score: float,
+    constraints_score: float,
+) -> dict[str, float]:
+    return {
+        "excellence": round(impact_match, 4),
+        "impact": round((semantic_score + bm25_score) / 2.0, 4),
+        "implementation": round(constraints_score, 4),
+        "tech_fit": round(technical_match, 4),
+    }
 
-    logger.info(
-        "Avvio scoring: %d call | pesi S=%.2f B=%.2f C=%.2f",
-        len(calls), w_semantic, w_bm25, w_constraints,
-    )
 
-    # ── Caricamento modello ──────────────────────────────────────────────────
-    model_name = config.get("embedding_model", "all-MiniLM-L6-v2")
-    cache_dir = config.get("model_cache_dir")
+def _build_hard_constraints(
+    company_profile: dict[str, Any],
+    call: dict[str, Any],
+) -> dict[str, Any]:
+    profile_budget_max = company_profile.get("budget_max")
+    return {
+        "trl_violation": call.get("trl_required") is not None and company_profile.get("trl_current", 5) < call.get("trl_required"),
+        "budget_company_available": float(company_profile.get("budget_company_available", 0.0) or 0.0),
+        "budget_max": float(profile_budget_max) if profile_budget_max not in (None, "") else _parse_budget_value(call.get("budget_indicative")),
+        "sme_required": bool((call.get("specific_conditions") or {}).get("sme_eligible")),
+        "sme_ok": bool(company_profile.get("is_sme", False)),
+        "ssh_required": bool((call.get("specific_conditions") or {}).get("ssh_required")),
+        "gender_balance_required": bool(company_profile.get("gender_balance_required", False)),
+    }
+
+
+def _solve_hybrid_score(
+    hybrid_scorer: HybridAHPLPGurobiScorer,
+    local_scores: dict[str, float],
+    hard_constraints: dict[str, Any],
+) -> dict[str, Any]:
     try:
-        model = _load_embedding_model(model_name, cache_dir=cache_dir)
+        result = hybrid_scorer.solve_lp(local_scores=local_scores, hard_constraints=hard_constraints)
     except Exception as exc:
         raise RuntimeError(
-            f"Impossibile caricare il modello '{model_name}': {exc}"
+            "Il motore di scoring richiede Gurobi operativo e una licenza valida."
         ) from exc
 
-    # ── Componente A ─────────────────────────────────────────────────────────
-    logger.info("Componente A: calcolo similarità semantica...")
-    semantic_scores = _compute_semantic_scores(
-        company_profile, calls, faiss_index, metadata, model
-    )
+    if result.get("status") != "Optimal":
+        raise RuntimeError(
+            f"Il motore Gurobi non ha prodotto una soluzione ottimale ({result.get('status', 'Unknown')})."
+        )
 
-    # ── Componente B ─────────────────────────────────────────────────────────
-    logger.info("Componente B: calcolo BM25...")
+    result["local_scores"] = {k: round(float(v), 4) for k, v in local_scores.items()}
+    return result
+
+
+def calculate_reliability_fit(
+    company_profile: dict[str, Any],
+    calls: list[dict[str, Any]],
+    faiss_index: faiss.Index,
+    metadata: dict[int, str],
+    config: dict[str, Any],
+) -> list[dict[str, Any]]:
+    backend = EmbeddingBackend(config)
+
+    semantic_scores = _compute_semantic_scores(company_profile, calls, faiss_index, metadata, backend)
     bm25_scores = _compute_bm25_scores(
         company_profile,
         calls,
         config.get("bm25_boost_factor", 1.15),
         config.get("bm25_boost_terms", []),
     )
+    hybrid_scorer = HybridAHPLPGurobiScorer()
 
-    # ── Componente C + score finale ──────────────────────────────────────────
-    logger.info("Componente C + score finale...")
-    results: list[dict] = []
-
+    results: list[dict[str, Any]] = []
     for call in calls:
         cid = call["id"]
-
         impact_match, technical_match = semantic_scores.get(cid, (0.5, 0.5))
-        semantic_avg = (impact_match + technical_match) / 2.0
-
-        bm25_score, bm25_boost_applied = bm25_scores.get(cid, (0.0, False))
-
-        constraints_score, trl_score, eligibility_score = _compute_constraints_score(
-            company_profile, call
+        semantic_score = (impact_match + technical_match) / 2.0
+        bm25_score, _bm25_boost_applied = bm25_scores.get(cid, (0.0, False))
+        constraints_score, trl_score, eligibility_score = _compute_constraints_score(company_profile, call)
+        local_scores = _build_local_scores(
+            impact_match=impact_match,
+            technical_match=technical_match,
+            semantic_score=semantic_score,
+            bm25_score=bm25_score,
+            constraints_score=constraints_score,
         )
-
-        reliability_score = (
-            w_semantic * semantic_avg
-            + w_bm25 * bm25_score
-            + w_constraints * constraints_score
+        hard_constraints = _build_hard_constraints(company_profile, call)
+        score_breakdown = _solve_hybrid_score(
+            hybrid_scorer=hybrid_scorer,
+            local_scores=local_scores,
+            hard_constraints=hard_constraints,
         )
-        reliability_score = round(min(max(reliability_score, 0.0), 1.0), 4)
-
-        semantic_contribution = w_semantic * semantic_avg
-        bm25_contribution = w_bm25 * bm25_score
-        constraints_contribution = w_constraints * constraints_score
-
         spider_axes = _compute_spider_axes(
-            company_profile, call,
-            impact_match, technical_match,
-            trl_score, eligibility_score,
-        )
-
-        logger.debug(
-            "Call %s | S=%.4f B=%.4f C=%.4f → R=%.4f",
-            cid, semantic_avg, bm25_score, constraints_score, reliability_score,
+            company_profile,
+            call,
+            impact_match,
+            technical_match,
+            trl_score,
+            eligibility_score,
         )
 
         results.append({
@@ -540,33 +420,13 @@ def calculate_reliability_fit(
             "title": call.get("title", ""),
             "cluster": call.get("cluster", ""),
             "type_of_action": call.get("type_of_action", ""),
-            "reliability_score": reliability_score,
-            "score_breakdown": {
-                "impact_match": round(impact_match, 4),
-                "technical_match": round(technical_match, 4),
-                "semantic_score": round(semantic_avg, 4),
-                "bm25_score": round(bm25_score, 4),
-                "bm25_boost_applied": bm25_boost_applied,
-                "trl_score": round(trl_score, 4),
-                "eligibility_score": round(eligibility_score, 4),
-                "constraints_score": round(constraints_score, 4),
-                "weighted_contributions": {
-                    "semantic": round(semantic_contribution, 4),
-                    "bm25": round(bm25_contribution, 4),
-                    "constraints": round(constraints_contribution, 4),
-                    "total": reliability_score,
-                },
-                "weights_used": {
-                    "semantic": w_semantic,
-                    "bm25": w_bm25,
-                    "constraints": w_constraints,
-                },
-            },
+            "fit_score": score_breakdown["fit_score"],
+            "fit_score_100": score_breakdown["fit_score_100"],
+            "score_breakdown": score_breakdown,
             "spider_axes": spider_axes,
             "call_data": call,
         })
 
-    results.sort(key=lambda x: x["reliability_score"], reverse=True)
-    logger.info("Scoring completato. Top score: %.4f", results[0]["reliability_score"] if results else 0)
-
+    results.sort(key=lambda x: x["fit_score"], reverse=True)
+    logger.info("Scoring completato. Top fit score: %.4f", results[0]["fit_score"] if results else 0.0)
     return results

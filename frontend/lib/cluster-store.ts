@@ -10,12 +10,14 @@ export type ClusterData = {
   extractionError?: string;
   companyDescription: string;
   clusterInterests: string;
-  // Profile flags (affect constraints score — 20% of reliability)
   trlCurrent?: number;        // 1–9, default 5
+  budgetCompanyAvailable?: number;
+  budgetMax?: number | null;
   isSme?: boolean;            // PMI/SME flag
   sshCapacity?: boolean;      // Social Sciences & Humanities
   fairCompliant?: boolean;    // FAIR data principles
   genderDimensionActive?: boolean; // Gender dimension integration
+  genderBalanceRequired?: boolean;
 };
 
 export type ClusterStore = {

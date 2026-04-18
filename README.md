@@ -1,54 +1,95 @@
 # Horizon Radar
 
-Piattaforma unica in stile Apple con flusso operativo ridotto a:
+Web app Next.js + FastAPI per stimare il fit tra un profilo aziendale e le call Horizon Europe.
 
-1. `Overview` (`/`)
-2. `Fit` (`/cluster/[id]`)
+## Cosa fa letteralmente oggi
 
-Motore di matching Horizon Europe: backend FastAPI locale, senza API esterne obbligatorie.
+### Flusso utente reale
 
-## Struttura attuale
+1. L'utente apre `Overview` (`/`) o direttamente `Fit` (`/fit/CL1` ... `/fit/CL6`).
+2. In `Fit` carica uno o piu PDF Work Programme.
+3. L'upload salva i PDF e fa solo parsing in `calls.json` (non calcola subito embeddings/FAISS).
+4. Quando l'utente clicca `Avvia Fit`, parte il calcolo completo:
+   - build indice embeddings on-demand
+   - loading FAISS + metadata
+   - scoring AHP + LP (Gurobi)
+   - spiegazione tecnica + AI fit review
+5. UI mostra top call, score breakdown, radar axes, gap/azioni, e reasoning trace del modello (se disponibile).
+6. Export PDF genera un report professionale con dettaglio call e sintesi executive.
 
-- `apple-it/`: asset/reference Apple da mantenere.
-- `frontend/`: UI Next.js (Overview, Fit, login).
-- `backend/`: API matcher (`/api/horizon-matcher/*`).
-- `scripts/`: avvio e pulizia workspace.
-- `runtime/`: log/report/snapshot locali.
-- `docs/`: criteri di ordine e manutenzione.
+### Endpoint backend usati dalla UI
 
-## Avvio (comando unico)
+- `GET /api/health`
+- `GET /api/horizon-matcher/status`
+- `POST /api/horizon-matcher/upload-pdf`
+- `POST /api/horizon-matcher/upload-pdfs`
+- `POST /api/horizon-matcher/score`
+- `POST /api/horizon-matcher/export-pdf`
 
-Dalla root:
+### Comportamento upload vs fit
+
+- Upload (`upload-pdf` / `upload-pdfs`):
+  - salva file
+  - parse call da PDF
+  - aggiorna `calls.json` e `qa_report.json`
+  - ritorna `indexed_vectors = 0`
+- Fit (`score`):
+  - verifica dipendenze
+  - costruisce indice embeddings/FAISS se assente o non aggiornato
+  - calcola ranking e spiegazioni
+
+Questo separa correttamente le due fasi: ingestione leggera in upload, computazione pesante al click su Fit.
+
+## Stack e modelli correnti
+
+- Frontend: Next.js 14 + TypeScript + Tailwind
+- Backend: FastAPI + FAISS + rank_bm25 + scipy + sentence-transformers + gurobipy + WeasyPrint
+- LLM response/reasoning (Ollama): `qwen2.5:3b`
+- Embeddings (Ollama): `qwen3-embedding:4b`
+- Reasoning trace: campo `thinking` di Ollama, esposto in UI come "Ragionamento del modello locale"
+
+## Config env rilevante (`backend/.env`)
+
+```env
+OLLAMA_ENABLED=true
+OLLAMA_HOST=http://127.0.0.1:11434
+OLLAMA_MODEL=qwen2.5:3b
+OLLAMA_THINK=true
+
+EMBEDDING_PROVIDER=ollama
+EMBEDDING_MODEL=qwen3-embedding:4b
+EMBEDDING_FALLBACK_MODEL=qwen3-embedding:4b
+EMBEDDING_TIMEOUT=300
+EMBEDDING_BATCH_SIZE=16
+EMBEDDING_MAX_CHARS=1800
+```
+
+## Struttura repository
+
+- `frontend/` UI Overview/Fit
+- `backend/` API + matcher engine + parser + scorer + export PDF
+- `backend/data/horizon_matcher/` dataset runtime (`calls.json`, `index.faiss`, `metadata.json`, `qa_report.json`, `audit_log.jsonl`)
+- `scripts/` utility di avvio/cleanup
+- `runtime/` report/snapshot locali
+
+## Avvio
+
+Da root:
 
 ```bash
 ./start.sh
 ```
 
-Lo script avvia:
-
 - Frontend: `http://localhost:3000`
-- Backend API/OpenAPI: `http://localhost:8000/docs`
+- Backend docs: `http://localhost:8000/docs`
 
-## Matcher: dati e rigenerazione indice
-
-Il backend usa `backend/data/horizon_matcher/` come data dir.
-
-Per rigenerare parser + indice manualmente:
+## Script utili backend
 
 ```bash
 cd backend
 .venv/bin/python scripts/horizon_matcher_ingest.py
 .venv/bin/python scripts/horizon_matcher_embed.py
 ```
-
-Per ingestione multi-cluster (più PDF in un unico dataset):
-
-```bash
-.venv/bin/python scripts/horizon_matcher_ingest.py /path/wp-4.pdf /path/wp-5.pdf /path/wp-6.pdf
-.venv/bin/python scripts/horizon_matcher_embed.py
-```
-
-In alternativa puoi caricare un PDF direttamente dalla UI Fit.
 
 ## Pulizia workspace
 

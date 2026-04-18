@@ -9,6 +9,7 @@ il mapping faiss_index → call_id in metadata.json.
 import json
 import logging
 import os
+import re
 import sys
 from typing import Optional
 
@@ -17,9 +18,8 @@ import numpy as np
 
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
-from sentence_transformers import SentenceTransformer
-
 from .config import get_matcher_config
+from .embedding_backend import EmbeddingBackend
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,55 +29,13 @@ logger = logging.getLogger(__name__)
 CONFIG = get_matcher_config()
 
 
-def _resolve_cached_snapshot_path(model_name: str, cache_dir: str | None) -> str | None:
-    """
-    Risolve il path locale dello snapshot HF se il modello è già in cache.
-    """
-    if not cache_dir:
-        return None
-
-    repo_candidates = [model_name]
-    if "/" not in model_name:
-        repo_candidates.insert(0, f"sentence-transformers/{model_name}")
-
-    for repo in repo_candidates:
-        safe_repo = repo.replace("/", "--")
-        model_root = os.path.join(cache_dir, f"models--{safe_repo}")
-        refs_main = os.path.join(model_root, "refs", "main")
-        snapshots_root = os.path.join(model_root, "snapshots")
-
-        if os.path.isfile(refs_main):
-            with open(refs_main, "r", encoding="utf-8") as f:
-                rev = f.read().strip()
-            snapshot = os.path.join(snapshots_root, rev)
-            if os.path.isdir(snapshot):
-                return snapshot
-
-        if os.path.isdir(snapshots_root):
-            candidates = [
-                os.path.join(snapshots_root, d)
-                for d in os.listdir(snapshots_root)
-                if os.path.isdir(os.path.join(snapshots_root, d))
-            ]
-            if candidates:
-                return sorted(candidates)[-1]
-
-    return None
-
-
-def _load_embedding_model(model_name: str, cache_dir: str | None = None) -> SentenceTransformer:
-    """
-    Carica il modello embeddings usando prima il path snapshot locale.
-    """
-    local_snapshot = _resolve_cached_snapshot_path(model_name, cache_dir)
-    if local_snapshot:
-        logger.info("Caricamento modello da cache locale: %s", local_snapshot)
-        return SentenceTransformer(local_snapshot)
-
-    logger.info("Modello %s non trovato in cache locale: tentativo download.", model_name)
-    return SentenceTransformer(model_name, cache_folder=cache_dir)
-
-
+def _prepare_embedding_text(value: str, max_chars: int) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if not text:
+        return ""
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars]
 # ─── Utility ─────────────────────────────────────────────────────────────────
 
 def _index_is_fresh(config: dict | None = None) -> bool:
@@ -93,6 +51,7 @@ def _index_is_fresh(config: dict | None = None) -> bool:
     effective_config = config or CONFIG
     index_path = effective_config["faiss_index"]
     calls_path = effective_config["calls_json"]
+    index_meta_path = effective_config.get("index_meta_json")
 
     if not os.path.exists(index_path):
         logger.debug("Index non trovato: %s", index_path)
@@ -100,13 +59,31 @@ def _index_is_fresh(config: dict | None = None) -> bool:
     if not os.path.exists(calls_path):
         logger.debug("calls.json non trovato: %s", calls_path)
         return False
+    if not index_meta_path or not os.path.exists(index_meta_path):
+        logger.debug("index_meta.json non trovato: rebuild necessario")
+        return False
 
     index_mtime = os.path.getmtime(index_path)
     calls_mtime = os.path.getmtime(calls_path)
 
     if index_mtime >= calls_mtime:
-        logger.debug("Index aggiornato (index_mtime=%f >= calls_mtime=%f)", index_mtime, calls_mtime)
-        return True
+        try:
+            with open(index_meta_path, "r", encoding="utf-8") as f:
+                index_meta = json.load(f)
+        except Exception:
+            logger.debug("index_meta.json non leggibile: rebuild necessario")
+            return False
+
+        current_provider = effective_config.get("embedding_provider")
+        current_model = effective_config.get("embedding_model")
+        if (
+            index_meta.get("embedding_provider") == current_provider
+            and index_meta.get("embedding_model") == current_model
+        ):
+            logger.debug("Index aggiornato e coerente con provider/modello embeddings correnti")
+            return True
+        logger.debug("Provider/modello embeddings cambiati: rebuild necessario")
+        return False
 
     logger.debug("calls.json più recente dell'index: ricalcolo necessario")
     return False
@@ -176,13 +153,13 @@ def build_index(calls_path: Optional[str] = None, config: dict | None = None) ->
 
     # ── Caricamento modello ──────────────────────────────────────────────────
     model_name = effective_config["embedding_model"]
-    cache_dir = effective_config.get("model_cache_dir")
-    logger.info("Caricamento modello: %s (download automatico al primo avvio)", model_name)
+    embedding_provider = effective_config.get("embedding_provider", "sentence_transformers")
+    logger.info("Caricamento embedding backend: provider=%s model=%s", embedding_provider, model_name)
     try:
-        model = _load_embedding_model(model_name, cache_dir=cache_dir)
+        backend = EmbeddingBackend(effective_config)
     except Exception as exc:
         raise RuntimeError(
-            f"Impossibile caricare il modello '{model_name}': {exc}\n"
+            f"Impossibile inizializzare il backend embeddings '{model_name}': {exc}\n"
             "Verifica la connessione internet al primo avvio."
         ) from exc
 
@@ -193,9 +170,11 @@ def build_index(calls_path: Optional[str] = None, config: dict | None = None) ->
     texts_scope: list[str] = []
     metadata: dict[int, str] = {}
 
+    max_chars = int(effective_config.get("embedding_max_chars", 1800))
+
     for i, call in enumerate(calls):
-        text_outcomes = call.get("expected_outcomes") or ""
-        text_scope = call.get("scope") or ""
+        text_outcomes = _prepare_embedding_text(call.get("expected_outcomes") or "", max_chars=max_chars)
+        text_scope = _prepare_embedding_text(call.get("scope") or "", max_chars=max_chars)
 
         texts_outcomes.append(text_outcomes)
         texts_scope.append(text_scope)
@@ -209,20 +188,10 @@ def build_index(calls_path: Optional[str] = None, config: dict | None = None) ->
     # ── Encoding ─────────────────────────────────────────────────────────────
     logger.info("Encoding %d testi outcomes...", len(texts_outcomes))
     try:
-        embeddings_outcomes = model.encode(
-            texts_outcomes,
-            batch_size=32,
-            show_progress_bar=False,
-            convert_to_numpy=True,
-        ).astype(np.float32)
+        embeddings_outcomes = backend.embed_texts(texts_outcomes).astype(np.float32)
 
         logger.info("Encoding %d testi scope...", len(texts_scope))
-        embeddings_scope = model.encode(
-            texts_scope,
-            batch_size=32,
-            show_progress_bar=False,
-            convert_to_numpy=True,
-        ).astype(np.float32)
+        embeddings_scope = backend.embed_texts(texts_scope).astype(np.float32)
     except Exception as exc:
         raise RuntimeError(f"Errore durante l'encoding: {exc}") from exc
 
@@ -255,11 +224,25 @@ def build_index(calls_path: Optional[str] = None, config: dict | None = None) ->
         raise RuntimeError(f"Errore durante il salvataggio dell'indice FAISS: {exc}") from exc
 
     metadata_path = effective_config["metadata_json"]
+    index_meta_path = effective_config["index_meta_json"]
     # Converti le chiavi in stringhe (JSON non supporta int keys)
     metadata_str_keys = {str(k): v for k, v in metadata.items()}
     with open(metadata_path, "w", encoding="utf-8") as f:
         json.dump(metadata_str_keys, f, ensure_ascii=False, indent=2)
     logger.info("Metadata salvato: %s (%d entries)", metadata_path, len(metadata))
+
+    with open(index_meta_path, "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "embedding_provider": effective_config.get("embedding_provider"),
+                "embedding_model": effective_config.get("embedding_model"),
+                "vector_dim": int(dim),
+            },
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
+    logger.info("Index meta salvato: %s", index_meta_path)
 
     print(f"\nIndice costruito con successo: {n} call, {n * 2} vettori totali.")
     print(f"  → {index_path}")

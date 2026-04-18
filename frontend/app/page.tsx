@@ -1,7 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { CSSProperties, useEffect } from 'react';
+import { CSSProperties, useEffect, useMemo, useState } from 'react';
+import { ExportPDFButton } from '@/components/ExportPDFButton';
+import { FitConstellationLoader } from '@/components/FitConstellationLoader';
+import { CLUSTERS, readClusterStore } from '@/lib/cluster-store';
+import type { HorizonMatcherProfilePayload } from '@/lib/types';
 
 type PromoSection = {
   eyebrow: string;
@@ -41,6 +45,50 @@ const sections: PromoSection[] = [
 ];
 
 export default function DashboardPage() {
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportMessage, setExportMessage] = useState('');
+
+  const portfolioProfile = useMemo<HorizonMatcherProfilePayload>(() => {
+    const store = readClusterStore();
+    const entries = CLUSTERS
+      .map((id) => store.clusterData[id])
+      .filter(Boolean);
+
+    const descriptions = entries
+      .map((item) => item?.companyDescription?.trim() || '')
+      .filter((txt) => txt.length > 0);
+    const interests = entries
+      .map((item) => item?.clusterInterests?.trim() || '')
+      .filter((txt) => txt.length > 0);
+    const tags = Array.from(
+      new Set(
+        interests
+          .join('\n')
+          .toLowerCase()
+          .split(/[\n,;|]+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length >= 3),
+      ),
+    ).slice(0, 30);
+
+    const latest = entries[0];
+    return {
+      description: descriptions.join('\n\n').slice(0, 8000) || 'Profilo portfolio Generative Bionics',
+      mission: descriptions.join('\n\n').slice(0, 6000) || 'Profilo portfolio Generative Bionics',
+      technical_knowhow: interests.join('\n').slice(0, 8000) || 'Physical AI, embodied AI, robotics',
+      keywords: tags,
+      trl_current: latest?.trlCurrent ?? 5,
+      budget_company_available: latest?.budgetCompanyAvailable ?? 0,
+      budget_max: latest?.budgetMax ?? null,
+      is_sme: latest?.isSme ?? false,
+      ssh_capacity: latest?.sshCapacity ?? false,
+      fair_compliant: latest?.fairCompliant ?? false,
+      gender_dimension_active: latest?.genderDimensionActive ?? false,
+      gender_balance_required: latest?.genderBalanceRequired ?? false,
+      clusters_interest: ['Health', 'Digital', 'Security', 'Manufacturing', 'Climate', 'Food'],
+    };
+  }, []);
+
   useEffect(() => {
     const panels = Array.from(document.querySelectorAll<HTMLElement>('.apple-home-panel'));
     if (!panels.length) return;
@@ -89,6 +137,26 @@ export default function DashboardPage() {
 
   return (
     <div className="apple-homepage" aria-label="Horizon Radar home">
+      <section className="apple-home-panel tone-dark" style={{ minHeight: '34vh' }}>
+        <div className="apple-home-panel-inner">
+          <p className="apple-home-eyebrow">Portfolio Export</p>
+          <h2>Genera Report Completo Portfolio Horizon</h2>
+          <p className="apple-home-subtitle">PDF professionale pronto per invio email ai founder (Executive + dettaglio call).</p>
+          <div className="apple-home-actions">
+            <ExportPDFButton
+              clusterId="PORTFOLIO"
+              profile={portfolioProfile}
+              includeAllCallsDefault={true}
+              topNDefault={15}
+              onLoadingChange={setExportLoading}
+              onMessage={(msg) => setExportMessage(msg)}
+              className="apple-home-link primary"
+              label="Esporta Report PDF"
+            />
+          </div>
+          {exportMessage && <p className="apple-home-subtitle" style={{ marginTop: '0.7rem' }}>{exportMessage}</p>}
+        </div>
+      </section>
       {sections.map((section, idx) => (
         <section
           key={section.title}
@@ -122,6 +190,12 @@ export default function DashboardPage() {
           </div>
         </section>
       ))}
+      {exportLoading && (
+        <div className="fit-loading-overlay" aria-live="polite">
+          <FitConstellationLoader phase="running" />
+          <div className="fit-loading-label">Generazione report portfolio in corso…</div>
+        </div>
+      )}
     </div>
   );
 }

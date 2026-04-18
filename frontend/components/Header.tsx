@@ -29,10 +29,6 @@ export function Header() {
 
   return (
     <>
-      <div className="apple-info-strip">
-        <span className="apple-info-strip-dot" />
-        Horizon Radar Workspace
-      </div>
       <header className={`apple-shell-header${scrolled ? ' is-scrolled' : ''}`}>
         <nav className="apple-shell-nav" aria-label="Main navigation">
           <Link className="apple-shell-brand" href="/" aria-label="Horizon Radar Home">

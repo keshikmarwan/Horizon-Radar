@@ -13,8 +13,10 @@ import {
 } from '@/lib/cluster-store';
 import { companyKey, readCrmStore } from '@/lib/crm-store';
 import { apiGet, apiPost, apiPostFormData } from '@/lib/api';
+import { ExportPDFButton } from '@/components/ExportPDFButton';
 import type {
   HorizonMatcherCallData,
+  HorizonMatcherProfilePayload,
   HorizonMatcherResponse,
   HorizonMatcherResult,
   HorizonMatcherScoreBreakdown,
@@ -43,6 +45,26 @@ const TRL_LABELS: Record<number, string> = {
   9: 'TRL 9 — Deployment operativo',
 };
 
+const EMPTY_CLUSTER_DATA: ClusterData = {
+  fileName: '',
+  fileType: '',
+  uploadedAt: '',
+  fileText: '',
+  extractedBy: '',
+  extractedChars: 0,
+  extractionError: '',
+  companyDescription: '',
+  clusterInterests: '',
+  trlCurrent: 5,
+  budgetCompanyAvailable: 0,
+  budgetMax: null,
+  isSme: false,
+  sshCapacity: false,
+  fairCompliant: false,
+  genderDimensionActive: false,
+  genderBalanceRequired: false,
+};
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type FitSummary = {
@@ -50,11 +72,16 @@ type FitSummary = {
   recommendation: 'GO' | 'WATCH' | 'NO-GO';
   explanation: string[];
   gaps: string[];
-  semanticScore: number;
-  keywordScore: number;
+  excellenceScore: number;
+  impactScore: number;
+  implementationScore: number;
+  techFitScore: number;
+  consistencyRatio: number;
+  solverStatus: string;
 };
 
 type TopicDecisionCardPreview = {
+  callId: string;
   topicTitle: string;
   topicText: string;
   summary: string;
@@ -62,9 +89,10 @@ type TopicDecisionCardPreview = {
   score: number;
   recommendation: string;
   overallFit: number;
-  gapScore: number;
-  readinessScore: number;
-  partnerDependencyScore: number;
+  implementationScore: number;
+  impactScore: number;
+  techFitScore: number;
+  excellenceScore: number;
   submissionPriority: number;
   confidence: number;
   recommendedRole: string;
@@ -74,6 +102,7 @@ type TopicDecisionCardPreview = {
   niceToHaveGaps: string[];
   suggestedPartnerTypes: string[];
   suggestedActions: string[];
+  aiFitReview: NonNullable<HorizonMatcherResult['explanation']>['ai_fit_review'] | null;
   spiderAxes: Record<string, number>;
   scoreBreakdown: HorizonMatcherScoreBreakdown;
   callData: HorizonMatcherCallData | null;
@@ -111,16 +140,24 @@ function formatError(err: unknown): string {
 function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
 
 function mapMatcherResultToPreview(row: HorizonMatcherResult): TopicDecisionCardPreview {
-  const r = Math.round(row.reliability_score * 100);
-  const sem = Math.round((row.score_breakdown.semantic_score || 0) * 100);
-  const bm = Math.round((row.score_breakdown.bm25_score || 0) * 100);
-  const con = Math.round((row.score_breakdown.constraints_score || 0) * 100);
-  const trl = Math.round((row.score_breakdown.trl_score || 0) * 100);
+  const r = Math.round(row.fit_score_100);
+  const excellence = Math.round((row.score_breakdown.local_scores?.excellence || 0) * 100);
+  const impact = Math.round((row.score_breakdown.local_scores?.impact || 0) * 100);
+  const implementation = Math.round((row.score_breakdown.local_scores?.implementation || 0) * 100);
+  const techFit = Math.round((row.score_breakdown.local_scores?.tech_fit || 0) * 100);
+  const clear = row.explanation?.clear_explanation;
+  const aiReview = row.explanation?.ai_fit_review ?? null;
   const gaps: string[] = [];
-  if (trl < 60) gaps.push('TRL gap da verificare');
-  if (con < 50) gaps.push('Vincoli/eligibility deboli');
-  if (!row.score_breakdown.bm25_boost_applied) gaps.push('Nessun boost keyword UE');
+  if ((row.score_breakdown.constraints_applied?.trl_violation as boolean | undefined) === true) gaps.push('Cap TRL applicato');
+  if ((row.score_breakdown.constraints_applied?.sme_required as boolean | undefined) && !(row.score_breakdown.constraints_applied?.sme_ok as boolean | undefined)) gaps.push('Vincolo SME non soddisfatto');
+  if ((row.score_breakdown.constraints_applied?.budget_company_available as number | undefined) !== undefined
+    && (row.score_breakdown.constraints_applied?.budget_max as number | undefined) !== undefined
+    && Number(row.score_breakdown.constraints_applied?.budget_company_available) < Number(row.score_breakdown.constraints_applied?.budget_max)) {
+    gaps.push('Cap budget applicato');
+  }
+  if (!row.score_breakdown.consistency_ok) gaps.push('AHP inconsistente');
   return {
+    callId: row.call_id,
     topicTitle: `${row.call_id} — ${row.title}`,
     topicText: row.justification,
     summary: `${row.cluster || ''}${row.type_of_action ? ` · ${row.type_of_action}` : ''}`,
@@ -128,18 +165,20 @@ function mapMatcherResultToPreview(row: HorizonMatcherResult): TopicDecisionCard
     score: r,
     recommendation: r >= 55 ? 'GO' : r >= 30 ? 'WATCH' : 'NO-GO',
     overallFit: r,
-    gapScore: 100 - con,
-    readinessScore: sem,
-    partnerDependencyScore: bm,
+    implementationScore: implementation,
+    impactScore: impact,
+    techFitScore: techFit,
+    excellenceScore: excellence,
     submissionPriority: r,
-    confidence: clamp(Math.round(100 - Math.abs(sem - bm) * 0.6), 35, 96),
-    recommendedRole: row.type_of_action || 'N/A',
-    whyFit: [row.justification],
-    whyNotFit: [],
-    mustHaveGaps: gaps,
+    confidence: clamp(Math.round((row.score_breakdown.consistency_ok ? 92 : 68) - row.score_breakdown.cr * 100), 35, 96),
+    recommendedRole: aiReview?.ideal_role?.replace('_', ' ') || row.type_of_action || 'N/A',
+    whyFit: aiReview?.strengths?.length ? aiReview.strengths : (clear?.testo_semplice ? [clear.testo_semplice] : [row.justification]),
+    whyNotFit: aiReview?.risks?.length ? aiReview.risks : [],
+    mustHaveGaps: [...gaps, ...(clear?.gap_principali || []), ...(aiReview?.risks || [])].slice(0, 8),
     niceToHaveGaps: [],
-    suggestedPartnerTypes: [],
-    suggestedActions: ['Verifica readiness consorzio', 'Controlla requisiti specifici nel testo'],
+    suggestedPartnerTypes: aiReview?.consortium_notes || [],
+    suggestedActions: aiReview?.next_steps?.length ? aiReview.next_steps : (clear?.azioni_concrete || ['Verifica readiness consorzio', 'Controlla requisiti specifici nel testo']),
+    aiFitReview: aiReview,
     spiderAxes: row.spider_axes || {},
     scoreBreakdown: row.score_breakdown,
     callData: row.call_data ?? null,
@@ -153,6 +192,22 @@ function RecommendationBadge({ value }: { value: string }) {
     ? 'fit-badge fit-badge--go'
     : value === 'WATCH' ? 'fit-badge fit-badge--watch' : 'fit-badge fit-badge--nogo';
   return <span className={cls}>{value}</span>;
+}
+
+function AIFitBadge({ value }: { value?: string }) {
+  const label = value === 'strong_fit'
+    ? 'AI strong fit'
+    : value === 'conditional_fit'
+      ? 'AI conditional fit'
+      : value === 'weak_fit'
+        ? 'AI weak fit'
+        : 'AI review';
+  const cls = value === 'strong_fit'
+    ? 'fit-badge fit-badge--go'
+    : value === 'conditional_fit'
+      ? 'fit-badge fit-badge--watch'
+      : 'fit-badge fit-badge--nogo';
+  return <span className={cls}>{label}</span>;
 }
 
 function ScoreRing({ value, label }: { value: number; label: string }) {
@@ -267,42 +322,40 @@ function SpiderFull({ axes }: { axes: Record<string, number> }) {
 
 // Score breakdown — shows weight contribution of each component
 function ScoreBreakdown({ breakdown }: { breakdown: HorizonMatcherScoreBreakdown }) {
-  const wSemantic = (breakdown.weights_used?.semantic ?? 0.5) * 100;
-  const wBm25 = (breakdown.weights_used?.bm25 ?? 0.3) * 100;
-  const wConstraints = (breakdown.weights_used?.constraints ?? 0.2) * 100;
   const rows = [
-    { label: 'Impact Match (A1)', key: 'impact_match' as const, weight: Math.round(wSemantic / 2), desc: 'Missione aziendale vs Expected Outcomes (semantica)' },
-    { label: 'Technical Match (A2)', key: 'technical_match' as const, weight: Math.round(wSemantic / 2), desc: 'Know-how tecnico vs Scope della call (semantica)' },
-    { label: 'BM25 Keyword', key: 'bm25_score' as const, weight: Math.round(wBm25), desc: 'Overlap keyword con vocabolario tecnico UE' },
-    { label: 'Vincoli Tecnici', key: 'constraints_score' as const, weight: Math.round(wConstraints), desc: 'TRL delta + bonus eligibility (SME, SSH, FAIR, Gender)' },
+    { label: 'Excellence', key: 'excellence', desc: 'Qualita scientifica e allineamento con gli expected outcomes.' },
+    { label: 'Impact', key: 'impact', desc: 'Potenziale strategico e valore atteso del topic.' },
+    { label: 'Implementation', key: 'implementation', desc: 'Fattibilita operativa dopo l\'applicazione dei vincoli LP.' },
+    { label: 'Tech Fit', key: 'tech_fit', desc: 'Compatibilita tecnico-metodologica con scope e know-how.' },
   ];
   return (
     <div className="fit-breakdown">
-      <h5 className="fit-breakdown-title">Come è stato calcolato</h5>
+      <h5 className="fit-breakdown-title">Come e' stato ottimizzato</h5>
       {rows.map(row => {
-        const val = breakdown[row.key] as number;
-        const pct = Math.round(val * 100);
+        const contribution = Math.round((breakdown.breakdown?.[row.key] || 0) * 100);
+        const local = Math.round((breakdown.local_scores?.[row.key] || 0) * 100);
+        const weight = Math.round((breakdown.weights?.[row.key] || 0) * 100);
         return (
           <div key={row.key} className="fit-breakdown-row">
             <div className="fit-breakdown-meta">
               <span className="fit-breakdown-name">{row.label}</span>
-              <span className="fit-breakdown-weight">peso {row.weight}%</span>
-              <span className="fit-breakdown-pct">{pct}%</span>
+              <span className="fit-breakdown-weight">peso {weight}%</span>
+              <span className="fit-breakdown-pct">{contribution}%</span>
             </div>
             <div className="fit-breakdown-bar-track">
-              <div className="fit-breakdown-bar-fill" style={{ width: `${pct}%` }} />
+              <div className="fit-breakdown-bar-fill" style={{ width: `${contribution}%` }} />
             </div>
             <p className="fit-breakdown-desc">{row.desc}</p>
+            <p className="fit-breakdown-desc fit-breakdown-desc--mono">
+              score locale {local}% · contributo LP ottimo {Math.round((breakdown.optimal_contributions?.[row.key] || 0) * 100)}%
+            </p>
           </div>
         );
       })}
       <div className="fit-breakdown-footer">
-        {breakdown.bm25_boost_applied && <span className="fit-breakdown-boost">✦ Boost keyword UE attivo (+15%)</span>}
         <span>
-          TRL score: {Math.round(breakdown.trl_score * 100)}% · Eligibility: {Math.round(breakdown.eligibility_score * 100)}%
-          {breakdown.weighted_contributions?.total !== undefined
-            ? ` · Totale pesato: ${Math.round((breakdown.weighted_contributions.total || 0) * 100)}%`
-            : ''}
+          Fit score {Math.round(breakdown.fit_score_100)}% · Solver {breakdown.solver} ({breakdown.status})
+          {` · CR ${breakdown.cr.toFixed(4)} · ${breakdown.consistency_ok ? 'Consistency OK' : 'Consistency warning'}`}
         </span>
       </div>
     </div>
@@ -393,16 +446,19 @@ export default function FitPage() {
   const [selectedTopic, setSelectedTopic] = useState<{ topic: TopicDecisionCardPreview; rank: number } | null>(null);
   const [fitStarted, setFitStarted] = useState(false);
   const [fitLoading, setFitLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportMessage, setExportMessage] = useState('');
+  const [exportAllCalls, setExportAllCalls] = useState(false);
   const [fitBooting, setFitBooting] = useState(false);
   const [fitFinishing, setFitFinishing] = useState(false);
   const [fitClosing, setFitClosing] = useState(false);
   const [fitClosingExit, setFitClosingExit] = useState(false);
   const [fitError, setFitError] = useState('');
 
-  const loaderPhase = fitFinishing || fitClosing || fitClosingExit ? 'finishing' : fitBooting ? 'booting' : 'running';
+  const loaderPhase = fitFinishing || fitClosing || fitClosingExit || exportLoading ? 'finishing' : fitBooting ? 'booting' : 'running';
   const cluster = clusterData[clusterId];
   const validCluster = CLUSTERS.includes(clusterId);
-  const matcherReady = Boolean(matcherStatus?.calls_json && matcherStatus?.index_faiss && matcherStatus?.metadata_json);
+  const matcherReady = Boolean(matcherStatus?.calls_json);
 
   const profileChoices = useMemo<ProfileOption[]>(() => {
     const kw = (cluster?.clusterInterests || '').split(/[\n,;|]+/).map(x => x.trim()).filter(x => x.length >= 2).slice(0, 24);
@@ -415,13 +471,7 @@ export default function FitPage() {
   useEffect(() => {
     const store = ensureClusterWorkspace();
     if (!store.clusterData[clusterId]) {
-      store.clusterData[clusterId] = {
-        fileName: '', fileType: '', uploadedAt: '', fileText: '',
-        extractedBy: '', extractedChars: 0, extractionError: '',
-        companyDescription: '', clusterInterests: '',
-        trlCurrent: 5, isSme: false, sshCapacity: false,
-        fairCompliant: false, genderDimensionActive: false,
-      };
+      store.clusterData[clusterId] = { ...EMPTY_CLUSTER_DATA };
       writeClusterStore(store);
     }
     setClusterData(store.clusterData);
@@ -502,6 +552,26 @@ export default function FitPage() {
   const tokenize = (t: string) =>
     t.toLowerCase().split(/[\n,;|]+/).map(x => x.trim()).filter(x => x.length >= 3).slice(0, 24);
 
+  const buildProfilePayload = (): HorizonMatcherProfilePayload | null => {
+    if (!cluster) return null;
+    const clusterName = CLUSTER_TO_NAME[clusterId] || clusterId;
+    return {
+      description: cluster.companyDescription,
+      mission: cluster.companyDescription,
+      technical_knowhow: cluster.clusterInterests,
+      keywords: tokenize(cluster.clusterInterests),
+      trl_current: cluster.trlCurrent ?? 5,
+      budget_company_available: cluster.budgetCompanyAvailable ?? 0,
+      budget_max: cluster.budgetMax ?? null,
+      is_sme: cluster.isSme ?? false,
+      ssh_capacity: cluster.sshCapacity ?? false,
+      fair_compliant: cluster.fairCompliant ?? false,
+      gender_dimension_active: cluster.genderDimensionActive ?? false,
+      gender_balance_required: cluster.genderBalanceRequired ?? false,
+      clusters_interest: [clusterName],
+    };
+  };
+
   const onUploadPdf = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -531,17 +601,10 @@ export default function FitPage() {
         `${dirtyCount > 0 ? ` · ${dirtyCount} anomalie parser da rivedere` : ''}`
       );
       setClusterData(prev => {
-        const empty: ClusterData = {
-          fileName: '', fileType: '', uploadedAt: '', fileText: '',
-          extractedBy: '', extractedChars: 0, extractionError: '',
-          companyDescription: '', clusterInterests: '',
-          trlCurrent: 5, isSme: false, sshCapacity: false,
-          fairCompliant: false, genderDimensionActive: false,
-        };
         return {
           ...prev,
           [target]: {
-            ...(prev[target] ?? prev[clusterId] ?? empty),
+            ...(prev[target] ?? prev[clusterId] ?? EMPTY_CLUSTER_DATA),
             fileName: files.length === 1 ? files[0].name : `${files.length} Work Programme PDF`,
             fileType: 'application/pdf',
             uploadedAt: new Date().toISOString(), fileText: '',
@@ -585,27 +648,17 @@ export default function FitPage() {
       await apiGet<{ status: string }>('/api/health');
       const live = await apiGet<{ calls_json?: boolean; index_faiss?: boolean; metadata_json?: boolean; qa_report_json?: boolean }>('/api/horizon-matcher/status');
       setMatcherStatus(live);
-      if (!(live.calls_json && live.index_faiss && live.metadata_json))
+      if (!live.calls_json)
         throw new Error('Carica un PDF Work Programme prima di avviare il fit.');
 
-      pushFitStream({ active: true, stage: 'scoring', title: 'Scoring', lines: ['Backend online.', 'Calcolo fit semantico + keyword + vincoli...'] });
+      pushFitStream({ active: true, stage: 'scoring', title: 'Scoring', lines: ['Backend online.', 'Ottimizzo con AHP + Gurobi LP...'] });
 
-      const tags = tokenize(cluster.clusterInterests);
+      const profilePayload = buildProfilePayload();
+      if (!profilePayload) throw new Error('Profilo non disponibile per il calcolo fit.');
       const clusterName = CLUSTER_TO_NAME[clusterId] || clusterId;
 
       const scored = await apiPost<HorizonMatcherResponse>('/api/horizon-matcher/score', {
-        profile: {
-          description: cluster.companyDescription,
-          mission: cluster.companyDescription,
-          technical_knowhow: cluster.clusterInterests,
-          keywords: tags,
-          trl_current: cluster.trlCurrent ?? 5,
-          is_sme: cluster.isSme ?? false,
-          ssh_capacity: cluster.sshCapacity ?? false,
-          fair_compliant: cluster.fairCompliant ?? false,
-          gender_dimension_active: cluster.genderDimensionActive ?? false,
-          clusters_interest: [clusterName],
-        },
+        profile: profilePayload,
         top_n: 10,
       });
 
@@ -615,24 +668,35 @@ export default function FitPage() {
 
       const avg = top.length > 0 ? Math.round(top.reduce((s, r) => s + r.overallFit, 0) / top.length) : 0;
       const rec = avg >= 55 ? 'GO' : avg >= 30 ? 'WATCH' : 'NO-GO';
-      const semAvg = scored.results.length > 0
-        ? Math.round(scored.results.reduce((s, r) => s + (r.score_breakdown.semantic_score || 0), 0) / scored.results.length * 100)
+      const excellenceAvg = scored.results.length > 0
+        ? Math.round(scored.results.reduce((s, r) => s + (r.score_breakdown.local_scores?.excellence || 0), 0) / scored.results.length * 100)
         : avg;
-      const kwAvg = scored.results.length > 0
-        ? Math.round(scored.results.reduce((s, r) => s + (r.score_breakdown.bm25_score || 0), 0) / scored.results.length * 100)
+      const impactAvg = scored.results.length > 0
+        ? Math.round(scored.results.reduce((s, r) => s + (r.score_breakdown.local_scores?.impact || 0), 0) / scored.results.length * 100)
         : avg;
+      const implementationAvg = scored.results.length > 0
+        ? Math.round(scored.results.reduce((s, r) => s + (r.score_breakdown.local_scores?.implementation || 0), 0) / scored.results.length * 100)
+        : avg;
+      const techFitAvg = scored.results.length > 0
+        ? Math.round(scored.results.reduce((s, r) => s + (r.score_breakdown.local_scores?.tech_fit || 0), 0) / scored.results.length * 100)
+        : avg;
+      const topBreakdown = scored.results[0]?.score_breakdown;
 
       setFit({
         score: avg,
         recommendation: rec as FitSummary['recommendation'],
         explanation: [
           `Fit calcolato su ${scored.total_calls} call Horizon Europe.`,
-          `Semantica 50% + BM25 30% + Vincoli tecnici 20%.`,
-          `Cluster: ${clusterName} · TRL corrente: ${cluster.trlCurrent ?? 5}`,
+          `Motore decisionale AHP + Gurobi LP con quattro criteri ottimizzati.`,
+          `Cluster: ${clusterName} · TRL corrente: ${cluster.trlCurrent ?? 5} · Solver: ${topBreakdown?.status || 'n/d'}`,
         ],
         gaps: top.flatMap(m => m.mustHaveGaps).slice(0, 8),
-        semanticScore: semAvg,
-        keywordScore: kwAvg,
+        excellenceScore: excellenceAvg,
+        impactScore: impactAvg,
+        implementationScore: implementationAvg,
+        techFitScore: techFitAvg,
+        consistencyRatio: topBreakdown?.cr ?? 0,
+        solverStatus: topBreakdown?.status || 'Unknown',
       });
 
       hasOutcome = true; outcomeTs = Date.now();
@@ -717,7 +781,7 @@ export default function FitPage() {
         <div className="fit-status-row">
           <div className={`fit-status-pill ${matcherReady ? 'fit-status-pill--ok' : 'fit-status-pill--warn'}`}>
             <span className="fit-status-dot" />
-            {matcherReady ? 'Indice pronto' : 'Upload richiesto'}
+            {matcherReady ? 'Dataset pronto' : 'Upload richiesto'}
           </div>
           {cluster?.fileName && <span className="fit-file-chip">{cluster.fileName}</span>}
           {cluster?.uploadedAt && (
@@ -775,7 +839,7 @@ export default function FitPage() {
         {/* Description & keywords */}
         <div className="fit-field">
           <label className="fit-label">
-            Descrizione azienda <span className="fit-label-sub">semantic fit — 50%</span>
+            Descrizione azienda <span className="fit-label-sub">input per Excellence e Impact</span>
           </label>
           <textarea
             rows={5}
@@ -788,7 +852,7 @@ export default function FitPage() {
 
         <div className="fit-field">
           <label className="fit-label">
-            Area di ricerca / keyword <span className="fit-label-sub">BM25 keyword fit — 30%</span>
+            Area di ricerca / keyword <span className="fit-label-sub">input per Impact e Tech Fit</span>
           </label>
           <textarea
             rows={4}
@@ -799,10 +863,9 @@ export default function FitPage() {
           />
         </div>
 
-        {/* Constraints — 20% of score */}
         <div className="fit-constraints-section">
           <p className="fit-label">
-            Vincoli tecnici <span className="fit-label-sub">constraints score — 20%</span>
+            Vincoli e risorse <span className="fit-label-sub">input LP e hard constraints</span>
           </p>
 
           {/* TRL slider */}
@@ -817,6 +880,32 @@ export default function FitPage() {
             />
             <span className="fit-trl-badge">{cluster?.trlCurrent ?? 5}</span>
             <span className="fit-trl-desc">{TRL_LABELS[cluster?.trlCurrent ?? 5]}</span>
+          </div>
+
+          <div className="fit-budget-grid">
+            <label className="fit-budget-field">
+              <span>Budget disponibile azienda</span>
+              <input
+                type="number"
+                min={0}
+                step="1000"
+                className="fit-input"
+                value={cluster?.budgetCompanyAvailable ?? 0}
+                onChange={e => updateClusterField('budgetCompanyAvailable', Number(e.target.value))}
+              />
+            </label>
+            <label className="fit-budget-field">
+              <span>Budget massimo manuale (opzionale)</span>
+              <input
+                type="number"
+                min={0}
+                step="1000"
+                className="fit-input"
+                value={cluster?.budgetMax ?? ''}
+                onChange={e => updateClusterField('budgetMax', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="Se vuoto usa il budget della call"
+              />
+            </label>
           </div>
 
           {/* Boolean flags */}
@@ -853,6 +942,14 @@ export default function FitPage() {
               />
               <span>Gender dimension</span>
             </label>
+            <label className="fit-flag-item">
+              <input
+                type="checkbox"
+                checked={cluster?.genderBalanceRequired ?? false}
+                onChange={e => updateClusterField('genderBalanceRequired', e.target.checked)}
+              />
+              <span>Gender balance hard cap</span>
+            </label>
           </div>
         </div>
       </div>
@@ -865,10 +962,11 @@ export default function FitPage() {
               <p className="fit-eyebrow">Analisi</p>
               <h3 style={{ margin: 0 }}>Fit Analysis</h3>
             </div>
-            <p className="fit-meta">Semantica 50% · BM25 keyword 30% · Vincoli normativi 20%</p>
+            <p className="fit-meta">AHP criteria: Excellence · Impact · Implementation · Tech Fit</p>
             {!matcherReady && <p className="fit-hint">Carica prima il PDF Work Programme.</p>}
             {matcherReady && !canFit && <p className="fit-hint">Compila descrizione e area di ricerca per attivare il fit.</p>}
             {fitError && <p className="fit-error">{fitError}</p>}
+            {exportMessage && <p className="fit-upload-msg">{exportMessage}</p>}
           </div>
           <button
             className="fit-run-btn"
@@ -889,11 +987,14 @@ export default function FitPage() {
           </div>
           <div className="fit-scores-grid">
             <ScoreRing value={fit.score} label="Overall" />
-            <ScoreRing value={fit.semanticScore} label="Semantica" />
-            <ScoreRing value={fit.keywordScore} label="Keyword" />
+            <ScoreRing value={fit.excellenceScore} label="Excellence" />
+            <ScoreRing value={fit.impactScore} label="Impact" />
+            <ScoreRing value={fit.implementationScore} label="Implementation" />
+            <ScoreRing value={fit.techFitScore} label="Tech Fit" />
             <div className="fit-rec-block">
               <span className="fit-rec-label">Raccomandazione</span>
               <RecommendationBadge value={fit.recommendation} />
+              <span className="fit-rec-meta">Solver {fit.solverStatus} · CR {fit.consistencyRatio.toFixed(4)}</span>
             </div>
           </div>
           <ul className="fit-explanation">
@@ -907,6 +1008,40 @@ export default function FitPage() {
         <div className="fit-section-header">
           <p className="fit-eyebrow">Ranking</p>
           <h3>Top 10 Call</h3>
+        </div>
+        <div className="fit-run-layout" style={{ marginBottom: '0.8rem' }}>
+          <label className="fit-flag-item" style={{ margin: 0 }}>
+            <input
+              type="checkbox"
+              checked={exportAllCalls}
+              onChange={e => setExportAllCalls(e.target.checked)}
+              disabled={!matcherReady || !canFit}
+            />
+            <span>Includi tutte le call (default: Top 15)</span>
+          </label>
+          <ExportPDFButton
+            clusterId={clusterId}
+            profile={buildProfilePayload() || {
+              description: '',
+              mission: '',
+              technical_knowhow: '',
+              keywords: [],
+              trl_current: 5,
+              budget_company_available: 0,
+              budget_max: null,
+              is_sme: false,
+              ssh_capacity: false,
+              fair_compliant: false,
+              gender_dimension_active: false,
+              gender_balance_required: false,
+              clusters_interest: [CLUSTER_TO_NAME[clusterId] || clusterId],
+            }}
+            includeAllCallsDefault={exportAllCalls}
+            topNDefault={15}
+            disabled={!matcherReady || !canFit || !buildProfilePayload()}
+            onLoadingChange={setExportLoading}
+            onMessage={(msg) => setExportMessage(msg)}
+          />
         </div>
         {!matcherReady ? (
           <p className="fit-hint">Carica un PDF Work Programme per generare la classifica.</p>
@@ -930,8 +1065,9 @@ export default function FitPage() {
                   <SpiderMini axes={t.spiderAxes} />
                   <div className="fit-call-scores">
                     <div className="fit-score-row"><span>Overall</span><strong>{Math.round(t.overallFit)}</strong></div>
-                    <div className="fit-score-row"><span>Semantica</span><strong>{Math.round(t.readinessScore)}</strong></div>
-                    <div className="fit-score-row"><span>Keyword</span><strong>{Math.round(t.partnerDependencyScore)}</strong></div>
+                    <div className="fit-score-row"><span>Excellence</span><strong>{Math.round(t.excellenceScore)}</strong></div>
+                    <div className="fit-score-row"><span>Impact</span><strong>{Math.round(t.impactScore)}</strong></div>
+                    <div className="fit-score-row"><span>Tech Fit</span><strong>{Math.round(t.techFitScore)}</strong></div>
                     <div className="fit-score-row"><span>Ruolo</span><strong className="fit-score-row-mono">{t.recommendedRole.slice(0, 22)}</strong></div>
                   </div>
                 </div>
@@ -964,6 +1100,7 @@ export default function FitPage() {
                 <h4 className="fit-call-title" title={t.topicTitle}>{t.topicTitle}</h4>
                 {t.summary && <p className="fit-call-summary">{t.summary}</p>}
                 <div className="fit-score-row"><span>Overall</span><strong>{Math.round(t.overallFit)}</strong></div>
+                <div className="fit-score-row"><span>Solver</span><strong>{t.scoreBreakdown.status}</strong></div>
                 <button className="fit-call-btn" onClick={() => openTopicDetail(t, idx + 10)}>
                   Dettaglio →
                 </button>
@@ -1008,6 +1145,32 @@ export default function FitPage() {
                     : ''}
                 </p>
               )}
+              <div style={{ marginTop: '0.6rem' }}>
+                <ExportPDFButton
+                  clusterId={clusterId}
+                  profile={buildProfilePayload() || {
+                    description: '',
+                    mission: '',
+                    technical_knowhow: '',
+                    keywords: [],
+                    trl_current: 5,
+                    budget_company_available: 0,
+                    budget_max: null,
+                    is_sme: false,
+                    ssh_capacity: false,
+                    fair_compliant: false,
+                    gender_dimension_active: false,
+                    gender_balance_required: false,
+                    clusters_interest: [CLUSTER_TO_NAME[clusterId] || clusterId],
+                  }}
+                  callIds={[selectedTopic.topic.callId]}
+                  includeAllCallsDefault={false}
+                  topNDefault={1}
+                  disabled={!buildProfilePayload()}
+                  onLoadingChange={setExportLoading}
+                  onMessage={(msg) => setExportMessage(msg)}
+                />
+              </div>
             </div>
 
             {/* Spider + Scores side by side */}
@@ -1018,7 +1181,8 @@ export default function FitPage() {
               <div className="fit-detail-scores-col">
                 <div className="fit-scores-grid fit-scores-grid--compact">
                   <ScoreRing value={Math.round(selectedTopic.topic.overallFit)} label="Overall" />
-                  <ScoreRing value={Math.round(selectedTopic.topic.readinessScore)} label="Semantica" />
+                  <ScoreRing value={Math.round(selectedTopic.topic.excellenceScore)} label="Excellence" />
+                  <ScoreRing value={Math.round(selectedTopic.topic.impactScore)} label="Impact" />
                   <ScoreRing value={Math.round(selectedTopic.topic.confidence)} label="Confidence" />
                 </div>
                 {selectedTopic.topic.mustHaveGaps.length > 0 && (
@@ -1038,9 +1202,85 @@ export default function FitPage() {
               <p className="fit-detail-text">{selectedTopic.topic.topicText}</p>
             </div>
 
+            {selectedTopic.topic.aiFitReview && (
+              <div className="fit-detail-block">
+                <div className="fit-detail-meta" style={{ marginBottom: '0.85rem' }}>
+                  <p className="fit-detail-block-label" style={{ margin: 0 }}>AI Copilot del Fit</p>
+                  <AIFitBadge value={selectedTopic.topic.aiFitReview.qualitative_fit_label} />
+                </div>
+                {selectedTopic.topic.aiFitReview.strategic_verdict && (
+                  <p className="fit-detail-text" style={{ fontWeight: 700 }}>
+                    {selectedTopic.topic.aiFitReview.strategic_verdict}
+                  </p>
+                )}
+                {selectedTopic.topic.aiFitReview.summary && (
+                  <p className="fit-detail-text fit-detail-text--muted">
+                    {selectedTopic.topic.aiFitReview.summary}
+                  </p>
+                )}
+                <div className="fit-detail-body">
+                  <div className="fit-detail-block" style={{ margin: 0 }}>
+                    <p className="fit-detail-block-label">Punti di forza letti dal modello</p>
+                    <ul className="fit-explanation">
+                      {(selectedTopic.topic.aiFitReview.strengths || []).map((item, idx) => <li key={idx}>{item}</li>)}
+                    </ul>
+                  </div>
+                  <div className="fit-detail-block" style={{ margin: 0 }}>
+                    <p className="fit-detail-block-label">Rischi e frizioni da gestire</p>
+                    <ul className="fit-explanation">
+                      {(selectedTopic.topic.aiFitReview.risks || []).map((item, idx) => <li key={idx}>{item}</li>)}
+                    </ul>
+                  </div>
+                </div>
+                <div className="fit-detail-body">
+                  <div className="fit-detail-block" style={{ margin: 0 }}>
+                    <p className="fit-detail-block-label">Prossimi passi consigliati</p>
+                    <ul className="fit-explanation">
+                      {(selectedTopic.topic.aiFitReview.next_steps || []).map((item, idx) => <li key={idx}>{item}</li>)}
+                    </ul>
+                  </div>
+                  <div className="fit-detail-block" style={{ margin: 0 }}>
+                    <p className="fit-detail-block-label">Ruolo e consorzio</p>
+                    <p className="fit-detail-text fit-detail-text--muted">
+                      Ruolo ideale: {selectedTopic.topic.aiFitReview.ideal_role?.replace('_', ' ') || 'n/d'}
+                    </p>
+                    <ul className="fit-explanation">
+                      {(selectedTopic.topic.aiFitReview.consortium_notes || []).map((item, idx) => <li key={idx}>{item}</li>)}
+                    </ul>
+                    <p className="fit-detail-text fit-detail-text--muted">
+                      Sorgente AI: {selectedTopic.topic.aiFitReview.enabled ? 'modello locale attivo' : 'fallback statico'}{selectedTopic.topic.aiFitReview.model ? ` · ${selectedTopic.topic.aiFitReview.model}` : ''}
+                    </p>
+                  </div>
+                </div>
+                {selectedTopic.topic.aiFitReview.reasoning_available && (
+                  <div className="fit-detail-block" style={{ margin: 0 }}>
+                    <p className="fit-detail-block-label">Ragionamento del modello locale</p>
+                    <p className="fit-detail-text fit-detail-text--muted">
+                      Trace `thinking` restituito da Ollama per questa review strategica.
+                    </p>
+                    <pre className="fit-reasoning-trace">
+                      {selectedTopic.topic.aiFitReview.reasoning_trace}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Score breakdown */}
             <div className="fit-detail-block">
               <ScoreBreakdown breakdown={selectedTopic.topic.scoreBreakdown} />
+            </div>
+
+            <div className="fit-detail-block">
+              <p className="fit-detail-block-label">Solver e consistenza</p>
+              <p className="fit-detail-text fit-detail-text--muted">
+                Solver: {selectedTopic.topic.scoreBreakdown.solver} · Status: {selectedTopic.topic.scoreBreakdown.status} ·
+                CR: {selectedTopic.topic.scoreBreakdown.cr.toFixed(4)} ·
+                {selectedTopic.topic.scoreBreakdown.consistency_ok ? ' matrice AHP consistente.' : ' matrice AHP da rivedere.'}
+              </p>
+              <p className="fit-detail-text fit-detail-text--muted">
+                Vincoli applicati: {JSON.stringify(selectedTopic.topic.scoreBreakdown.constraints_applied)}
+              </p>
             </div>
 
             {/* Expected Outcomes & Scope from PDF */}
@@ -1077,7 +1317,7 @@ export default function FitPage() {
       </div>
 
       {/* ── Fit Overlay ──────────────────────────────────── */}
-      {fitLoading && (
+      {(fitLoading || exportLoading) && (
         <div className={`fit-loading-overlay${fitBooting ? ' is-booting' : ''}${fitFinishing ? ' is-finishing' : ''}${fitClosing ? ' is-outcome' : ''}${fitClosingExit ? ' is-closing' : ''}`} aria-live="polite">
           <FitConstellationLoader phase={loaderPhase} />
           {fitClosing && fit && (
@@ -1094,7 +1334,15 @@ export default function FitPage() {
             </div>
           )}
           <div className="fit-loading-label">
-            {fitClosing ? 'Fit pronto.' : fitFinishing ? 'Consolidamento finale…' : fitBooting ? 'Inizializzo motore…' : 'Analisi in corso…'}
+            {exportLoading
+              ? 'Generazione report PDF professionale…'
+              : fitClosing
+                ? 'Fit pronto.'
+                : fitFinishing
+                  ? 'Consolidamento finale…'
+                  : fitBooting
+                    ? 'Inizializzo motore…'
+                    : 'Analisi in corso…'}
           </div>
         </div>
       )}

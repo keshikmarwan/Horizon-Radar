@@ -50,11 +50,17 @@ async function fetchWithRetry(path: string, init: RequestInit, attempts = 8): Pr
   const urls = [API_URL, browserHostApi, FALLBACK_API_URL].filter((v, i, arr) => Boolean(v) && arr.indexOf(v) === i);
   const resolvedUrls = [sameHostPortSwap, ...urls].filter((v, i, arr) => Boolean(v) && arr.indexOf(v) === i);
   let lastError: unknown = null;
+  let lastResponse: Response | null = null;
 
   for (let i = 0; i < attempts; i++) {
     for (const base of resolvedUrls) {
       try {
         const res = await fetch(`${base}${path}`, init);
+        if (res.status === 404 || res.status === 405) {
+          // This host likely does not expose the API route: try the next candidate.
+          lastResponse = res;
+          continue;
+        }
         return res;
       } catch (err) {
         lastError = err;
@@ -63,6 +69,9 @@ async function fetchWithRetry(path: string, init: RequestInit, attempts = 8): Pr
     await delay(500);
   }
 
+  if (lastResponse) {
+    return lastResponse;
+  }
   throw new Error(`API unreachable for ${path}. Last error: ${String(lastError)}`);
 }
 
@@ -99,4 +108,27 @@ export async function apiPostFormData<T>(path: string, formData: FormData): Prom
     throw new Error(`API POST(form-data) failed (${res.status}) for ${path}`);
   }
   return res.json() as Promise<T>;
+}
+
+export async function apiPostBlob(path: string, body?: unknown): Promise<{ blob: Blob; filename?: string }> {
+  const res = await fetchWithRetry(path, {
+    method: 'POST',
+    headers: await withUserHeaders({ 'Content-Type': 'application/json' }),
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    let detail = `API POST(blob) failed (${res.status}) for ${path}`;
+    try {
+      const maybeJson = await res.json() as { detail?: string };
+      if (maybeJson?.detail) detail = maybeJson.detail;
+    } catch {
+      // keep default detail
+    }
+    throw new Error(detail);
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get('content-disposition') || '';
+  const match = disposition.match(/filename\\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i);
+  const filenameRaw = decodeURIComponent(match?.[1] || match?.[2] || '').trim();
+  return { blob, filename: filenameRaw || undefined };
 }

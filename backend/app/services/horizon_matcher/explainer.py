@@ -1,323 +1,291 @@
 """
-explainer.py — Step 4: testo esplicativo auditabile in italiano
-
-Genera una giustificazione in linguaggio naturale (max 5 frasi) per ogni
-call nella Top 10 e registra un audit_record su data/audit_log.jsonl.
+explainer.py — spiegazioni auditabili e founder-friendly per il motore AHP + Gurobi LP.
 """
+
+from __future__ import annotations
 
 import hashlib
 import json
 import logging
 import os
-import re
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any
 
 from .config import get_matcher_config
+from .llm_explainer import generate_clear_explanation
+from .llm_fit_assistant import generate_ai_fit_review
 
 logger = logging.getLogger(__name__)
 CONFIG = get_matcher_config()
 
-# Termini tecnici da cercare nei testi per le citazioni esplicative
-TECH_TERMS = [
-    "federated learning", "health data space", "digital twin",
-    "virtual human twin", "post-quantum cryptography", "cybersecurity",
-    "machine learning", "artificial intelligence", "circular economy",
-    "green deal", "climate neutrality", "net zero", "safe and sustainable by design",
-    "gdpr", "fair data", "quantum", "pqc", "ssbd",
-]
+CRITERIA_KEYS = ["excellence", "impact", "implementation", "tech_fit"]
 
 
-# ─── Utility ─────────────────────────────────────────────────────────────────
-
-def _find_common_tech_terms(
-    company_profile: dict,
-    call: dict,
-    max_terms: int = 2,
-) -> list[str]:
-    """
-    Trova termini tecnici condivisi tra profilo aziendale e testo della call.
-
-    Args:
-        company_profile: profilo aziendale (description + technical_knowhow + keywords)
-        call: dict della call (scope + expected_outcomes)
-        max_terms: numero massimo di termini da restituire
-
-    Returns:
-        Lista di termini tecnici comuni (stringa originale)
-    """
-    profile_text = " ".join([
-        company_profile.get("description", ""),
-        company_profile.get("technical_knowhow", ""),
-        " ".join(company_profile.get("keywords", [])),
-    ]).lower()
-
-    call_text = " ".join([
-        call.get("scope") or "",
-        call.get("expected_outcomes") or "",
-    ]).lower()
-
-    found = []
-    for term in TECH_TERMS:
-        if term in profile_text and term in call_text:
-            found.append(term)
-        if len(found) >= max_terms:
-            break
-
-    return found
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(k): _json_safe(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, tuple):
+        return [_json_safe(v) for v in value]
+    if hasattr(value, "item"):
+        try:
+            return value.item()
+        except Exception:
+            return str(value)
+    return value
 
 
-def _dominant_component(score_breakdown: dict) -> str:
-    """
-    Identifica quale componente ha contribuito di più al reliability score.
-
-    Args:
-        score_breakdown: dict con valori intermedi e pesi
-
-    Returns:
-        Stringa descrittiva del componente dominante
-    """
-    weights = score_breakdown.get("weights_used", {})
-    contributions = {
-        "semantica": weights.get("semantic", 0.5) * score_breakdown.get("semantic_score", 0),
-        "BM25": weights.get("bm25", 0.3) * score_breakdown.get("bm25_score", 0),
-        "vincoli tecnici": weights.get("constraints", 0.2) * score_breakdown.get("constraints_score", 0),
-    }
-    dominant = max(contributions, key=contributions.get)
-    dominant_value = contributions[dominant]
-    return dominant, dominant_value
+def _safe_float(v: Any, default: float = 0.0) -> float:
+    try:
+        return float(v)
+    except Exception:
+        return default
 
 
-def _trl_sentence(score_breakdown: dict, call_data: dict, company_profile: dict) -> str:
-    """
-    Genera la frase sul TRL match/mismatch.
+def _dominant_component(score_breakdown: dict[str, Any]) -> tuple[str, float]:
+    breakdown = score_breakdown.get("breakdown", {}) or {}
+    if not breakdown:
+        return "fit", 0.0
+    dominant = max(breakdown, key=breakdown.get)
+    return dominant, float(breakdown.get(dominant, 0.0))
 
-    Args:
-        score_breakdown: dict con trl_score
-        call_data: dict della call
-        company_profile: profilo aziendale
 
-    Returns:
-        Stringa descrittiva del TRL match
-    """
-    trl_required = call_data.get("trl_required")
-    trl_range = call_data.get("trl_range")
-    trl_current = company_profile.get("trl_current", 5)
-    trl_score = score_breakdown.get("trl_score", 0.6)
+def _estimate_caps(constraints: dict[str, Any]) -> list[str]:
+    caps: list[str] = []
 
-    if trl_required is None:
-        return "Il documento non specifica un TRL target (punteggio neutro applicato)."
+    if constraints.get("trl_violation", False):
+        caps.append("Cap TRL su Excellence (x_excellence <= 0.3)")
 
-    trl_label = trl_range if trl_range else f"TRL {trl_required}"
-    delta = trl_required - trl_current
+    budget_available = _safe_float(constraints.get("budget_company_available"), 0.0)
+    budget_max = _safe_float(constraints.get("budget_max"), 999999999.0)
+    if budget_available < budget_max:
+        caps.append("Cap budget su Implementation (x_implementation <= 0.4)")
 
-    if delta <= 0:
-        return (
-            f"Il TRL aziendale ({trl_current}) è allineato o superiore al requisito "
-            f"della call ({trl_label}), senza penalità."
+    if constraints.get("sme_required", False) and not constraints.get("sme_ok", False):
+        caps.append("Cap SME su Implementation (x_implementation <= 0.2)")
+
+    if constraints.get("ssh_required", False):
+        caps.append("Cap SSH su Impact (x_impact <= 0.5)")
+
+    if constraints.get("gender_balance_required", False):
+        caps.append("Cap gender balance su Implementation (x_implementation <= 0.6)")
+
+    return caps
+
+
+def _extract_quotes(call_data: dict[str, Any], max_items: int = 3) -> list[str]:
+    excerpts: list[str] = []
+    for field in ("expected_outcomes", "scope"):
+        text = str(call_data.get(field) or "").strip()
+        if not text:
+            continue
+        lines = [ln.strip(" •\t-") for ln in text.splitlines() if ln.strip()]
+        for ln in lines:
+            if len(ln) >= 60:
+                excerpts.append(ln[:280] + ("…" if len(ln) > 280 else ""))
+            if len(excerpts) >= max_items:
+                return excerpts
+    return excerpts[:max_items]
+
+
+def _build_gap_actions(score_breakdown: dict[str, Any], call_data: dict[str, Any]) -> tuple[list[str], list[str]]:
+    local_scores = score_breakdown.get("local_scores", {}) or {}
+    constraints = score_breakdown.get("constraints_applied", {}) or {}
+
+    gaps: list[str] = []
+    actions: list[str] = []
+
+    if _safe_float(local_scores.get("excellence"), 0.0) < 0.55:
+        gaps.append("Excellence sotto soglia competitiva: narrativa scientifica da rafforzare")
+        actions.append("Definire proof plan tecnico con milestone TRL e metriche di validazione (90 giorni)")
+
+    if _safe_float(local_scores.get("impact"), 0.0) < 0.55:
+        gaps.append("Impact non ancora distintivo su outcomes e policy relevance")
+        actions.append("Allineare proposition agli expected outcomes della call con KPI misurabili (60 giorni)")
+
+    if _safe_float(local_scores.get("implementation"), 0.0) < 0.55:
+        gaps.append("Implementation debole: piano esecutivo/consortium readiness non sufficiente")
+        actions.append("Costruire shortlist partner (end-user, integrator, academia) e governance WP (90-120 giorni)")
+
+    if constraints.get("trl_violation"):
+        trl_req = call_data.get("trl_required")
+        gaps.append(f"TRL aziendale inferiore al requisito della call (target: {trl_req})")
+        actions.append("Eseguire pilot dimostrativo per salire di almeno 1 livello TRL (3-6 mesi)")
+
+    if constraints.get("sme_required") and not constraints.get("sme_ok"):
+        gaps.append("Requisito SME non soddisfatto dal profilo corrente")
+        actions.append("Valutare ruolo da partner o struttura legale/cap table compatibile con requisiti SME")
+
+    if constraints.get("ssh_required"):
+        gaps.append("La call richiede copertura SSH esplicita")
+        actions.append("Integrare partner SSH e work package dedicato a impatti sociali/adozione")
+
+    if constraints.get("gender_balance_required"):
+        gaps.append("Vincolo gender balance attivo sul piano di implementazione")
+        actions.append("Formalizzare policy e target gender balance su team/proposal")
+
+    if not gaps:
+        gaps.append("Nessun gap bloccante evidente dai vincoli hard del solver")
+    if not actions:
+        actions.append("Consolidare la bozza di proposal con piano operativo e risk register")
+
+    return gaps[:6], actions[:6]
+
+
+class HorizonExplainer:
+    """Genera spiegazione tecnica + narrativa business-friendly per una call."""
+
+    def __init__(self, pairwise_matrix: list[list[float]] | None = None):
+        if pairwise_matrix is None:
+            pairwise_matrix = [
+                [1, 3, 5, 2],
+                [1 / 3, 1, 3, 1],
+                [1 / 5, 1 / 3, 1, 0.5],
+                [0.5, 1, 2, 1],
+            ]
+        self.pairwise_matrix = pairwise_matrix
+
+    def generate_full_explanation(
+        self,
+        call: dict[str, Any],
+        scores: dict[str, Any],
+        profile: dict[str, Any],
+        pdf_excerpts: list[str] | None = None,
+    ) -> dict[str, Any]:
+        breakdown = scores.get("score_breakdown", {}) or {}
+        weights = breakdown.get("weights", {}) or {}
+        local_scores = breakdown.get("local_scores", {}) or {}
+        optimal = breakdown.get("optimal_contributions", {}) or {}
+        constraints = breakdown.get("constraints_applied", {}) or {}
+        dominant, dominant_val = _dominant_component(breakdown)
+        caps = _estimate_caps(constraints)
+        quotes = pdf_excerpts or _extract_quotes(call)
+        gaps, actions = _build_gap_actions(breakdown, call)
+
+        call_id = scores.get("call_id", "")
+        fit_score_100 = _safe_float(scores.get("fit_score_100"), 0.0)
+        solver_status = breakdown.get("status", "Unknown")
+        cr = _safe_float(breakdown.get("cr"), 0.0)
+
+        clear_text = (
+            f"La call {call_id} ottiene un fit del {fit_score_100:.1f}% dopo ottimizzazione LP. "
+            f"Il criterio dominante e' {dominant} (contributo {dominant_val * 100:.1f}/100). "
+            f"Solver: {solver_status}, CR AHP: {cr:.4f}."
         )
-    elif delta == 1:
-        return (
-            f"Il TRL aziendale ({trl_current}) è di un livello inferiore al requisito "
-            f"della call ({trl_label}): penalità lieve (−0.25)."
-        )
-    elif delta == 2:
-        return (
-            f"Il TRL aziendale ({trl_current}) è di due livelli inferiore al requisito "
-            f"della call ({trl_label}): penalità moderata (−0.50)."
-        )
-    else:
-        return (
-            f"Il TRL aziendale ({trl_current}) è significativamente inferiore al requisito "
-            f"della call ({trl_label}): penalità elevata (trl_score={trl_score:.2f})."
-        )
 
+        # LLM explainer (opzionale, con fallback automatico)
+        llm_clear = generate_clear_explanation(call=call, scores=scores, profile=profile)
+        ai_fit_review = generate_ai_fit_review(call=call, scores=scores, profile=profile)
 
-def _special_conditions_sentence(score_breakdown: dict, call_data: dict, company_profile: dict) -> Optional[str]:
-    """
-    Genera la frase sui requisiti speciali (SSH, gender, SME, FAIR).
+        return {
+            "ahp_detailed": {
+                "pairwise_matrix": self.pairwise_matrix,
+                "weights": {k: _safe_float(weights.get(k), 0.0) for k in CRITERIA_KEYS},
+                "consistency": {
+                    "lambda_max": None,
+                    "ci": None,
+                    "cr": cr,
+                    "consistency_ok": bool(breakdown.get("consistency_ok", False)),
+                },
+                "local_scores_pre_lp": {k: _safe_float(local_scores.get(k), 0.0) for k in CRITERIA_KEYS},
+                "optimal_post_lp": {k: _safe_float(optimal.get(k), 0.0) for k in CRITERIA_KEYS},
+                "breakdown": {k: _safe_float((breakdown.get("breakdown", {}) or {}).get(k), 0.0) for k in CRITERIA_KEYS},
+                "lp_constraints_effect": caps,
+            },
+            "clear_explanation": llm_clear or {
+                "testo_semplice": clear_text,
+                "citazioni_dirette": quotes[:3],
+                "gap_principali": gaps,
+                "azioni_concrete": actions,
+                "criterio_dominante": dominant,
+            },
+            "ai_fit_review": ai_fit_review,
+            "meta": {
+                "call_id": call_id,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "profile_trl": profile.get("trl_current"),
+            },
+        }
 
-    Args:
-        score_breakdown: dict score breakdown
-        call_data: dict della call
-        company_profile: profilo aziendale
-
-    Returns:
-        Frase descrittiva o None se non ci sono condizioni speciali rilevanti
-    """
-    conditions = call_data.get("specific_conditions", {})
-    parts = []
-
-    if conditions.get("ssh_required"):
-        met = company_profile.get("ssh_capacity", False)
-        parts.append(
-            f"SSH ({'soddisfatto' if met else 'non soddisfatto'})"
-        )
-    if conditions.get("gender_dimension"):
-        met = company_profile.get("gender_dimension_active", False)
-        parts.append(
-            f"Gender Dimension ({'soddisfatto' if met else 'non soddisfatto'})"
-        )
-    if conditions.get("sme_eligible") and company_profile.get("is_sme"):
-        parts.append("SME eligibility (+bonus)")
-    if conditions.get("fair_data"):
-        met = company_profile.get("fair_compliant", False)
-        parts.append(
-            f"FAIR Data ({'soddisfatto' if met else 'non soddisfatto'})"
-        )
-
-    if not parts:
-        return None
-
-    return "La call richiede: " + ", ".join(parts) + "."
-
-
-# ─── Core ────────────────────────────────────────────────────────────────────
 
 def generate_justification(
-    scored_call: dict,
-    company_profile: dict,
-    config: dict | None = None,
-) -> tuple[str, dict]:
-    """
-    Genera il testo esplicativo in italiano per una call e registra l'audit trail.
-
-    Produce una stringa di massimo 5 frasi che cita il reliability score,
-    il componente dominante, il TRL match, i termini tecnici comuni e
-    i requisiti speciali della call.
-
-    Scrive automaticamente un audit_record in data/audit_log.jsonl.
-
-    Args:
-        scored_call: dict restituito da calculate_reliability_fit() per una call
-        company_profile: profilo aziendale usato nel calcolo
-
-    Returns:
-        (justification_text, audit_record)
-        - justification_text: stringa in italiano, max 5 frasi
-        - audit_record: dict con timestamp, hash, breakdown, justification
-    """
-    score_breakdown = scored_call.get("score_breakdown", {})
-    call_data = scored_call.get("call_data", {})
+    scored_call: dict[str, Any],
+    company_profile: dict[str, Any],
+    config: dict[str, Any] | None = None,
+) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    """Compat layer: ritorna anche spiegazione strutturata per UI/report."""
+    score_breakdown = scored_call.get("score_breakdown", {}) or {}
+    call_data = scored_call.get("call_data", {}) or {}
     call_id = scored_call.get("call_id", "")
     title = scored_call.get("title", "")
-    reliability_score = scored_call.get("reliability_score", 0.0)
-    score_pct = int(round(reliability_score * 100))
+    fit_score_100 = _safe_float(scored_call.get("fit_score_100"), 0.0)
 
-    # ── Frase 1: score + identità call ──────────────────────────────────────
-    weighted = score_breakdown.get("weighted_contributions", {})
-    if {"semantic", "bm25", "constraints"}.issubset(weighted.keys()):
-        sentence_1 = (
-            f"Affidabilità del {score_pct}% per {call_id} '{title}' "
-            f"(semantica {weighted.get('semantic', 0)*100:.1f}pp + "
-            f"BM25 {weighted.get('bm25', 0)*100:.1f}pp + "
-            f"vincoli {weighted.get('constraints', 0)*100:.1f}pp)."
-        )
-    else:
-        sentence_1 = (
-            f"Affidabilità del {score_pct}% per {call_id} '{title}'."
-        )
+    dominant, dominant_value = _dominant_component(score_breakdown)
+    local_scores = score_breakdown.get("local_scores", {}) or {}
+    weights = score_breakdown.get("weights", {}) or {}
+    solver_status = score_breakdown.get("status", "Unknown")
 
-    # ── Frase 2: componente dominante ────────────────────────────────────────
-    dominant, dominant_val = _dominant_component(score_breakdown)
-    if dominant == "semantica":
-        sem_score = score_breakdown.get("semantic_score", 0)
-        sentence_2 = (
-            f"Il contributo maggiore proviene dalla similarità semantica "
-            f"({sem_score:.2f}/1.0): la missione aziendale è fortemente allineata "
-            f"agli Expected Outcomes della call."
-        )
-    elif dominant == "BM25":
-        bm25 = score_breakdown.get("bm25_score", 0)
-        boost_txt = " (con boost per termini tecnici UE)" if score_breakdown.get("bm25_boost_applied") else ""
-        sentence_2 = (
-            f"Il contributo maggiore proviene dal keyword match BM25 "
-            f"({bm25:.2f}/1.0){boost_txt}: la descrizione aziendale condivide "
-            f"vocabolario significativo con il testo della call."
-        )
-    else:
-        c_score = score_breakdown.get("constraints_score", 0)
-        sentence_2 = (
-            f"Il contributo maggiore proviene dall'allineamento tecnico-normativo "
-            f"({c_score:.2f}/1.0): TRL e criteri di eligibilità sono ben soddisfatti."
-        )
+    sentences = [
+        (
+            f"Fit score del {fit_score_100:.1f}% per {call_id} '{title}', ottimizzato con AHP + Gurobi "
+            f"(solver: {solver_status}, CR={_safe_float(score_breakdown.get('cr'), 0.0):.4f})."
+        ),
+        (
+            f"Criterio dominante: {dominant} con contributo pesato {dominant_value * 100:.1f} punti su 100; "
+            f"pesi AHP attivi: Excellence {weights.get('excellence', 0):.4f}, "
+            f"Impact {weights.get('impact', 0):.4f}, Implementation {weights.get('implementation', 0):.4f}, "
+            f"Tech Fit {weights.get('tech_fit', 0):.4f}."
+        ),
+        (
+            f"Punteggi locali pre-LP: Excellence {local_scores.get('excellence', 0):.2f}, "
+            f"Impact {local_scores.get('impact', 0):.2f}, "
+            f"Implementation {local_scores.get('implementation', 0):.2f}, "
+            f"Tech Fit {local_scores.get('tech_fit', 0):.2f}."
+        ),
+    ]
 
-    # ── Frase 3: match tecnico + termini comuni ───────────────────────────────
-    tech_match = score_breakdown.get("technical_match", 0)
-    common_terms = _find_common_tech_terms(company_profile, call_data)
-    if common_terms:
-        terms_str = "'" + "' e '".join(common_terms) + "'"
-        sentence_3 = (
-            f"Il match tecnico è {'elevato' if tech_match >= 0.7 else 'moderato'} "
-            f"({tech_match:.2f}/1.0) grazie alla presenza di termini chiave condivisi "
-            f"come {terms_str}."
-        )
-    else:
-        sentence_3 = (
-            f"Il match tecnico ({tech_match:.2f}/1.0) è basato sulla similarità "
-            f"semantica tra know-how aziendale e scope della call."
-        )
-
-    # ── Frase 4: TRL ─────────────────────────────────────────────────────────
-    sentence_4 = _trl_sentence(score_breakdown, call_data, company_profile)
-
-    # ── Frase 5: condizioni speciali (opzionale) ─────────────────────────────
-    sentence_5 = _special_conditions_sentence(score_breakdown, call_data, company_profile)
+    caps = _estimate_caps(score_breakdown.get("constraints_applied", {}) or {})
+    if caps:
+        sentences.append("Vincoli LP attivati: " + "; ".join(caps) + ".")
 
     source_docs = call_data.get("source_documents") or ([call_data.get("source_document")] if call_data.get("source_document") else [])
     source_pages = call_data.get("source_pages") or []
-    source_sentence = None
     if source_docs:
-        docs_txt = ", ".join(source_docs[:2])
-        pages_txt = ""
-        if source_pages:
-            pages_txt = f", pagine {', '.join(str(p) for p in source_pages[:5])}"
-            if len(source_pages) > 5:
-                pages_txt += "…"
-        source_sentence = f"Riferimento documento: {docs_txt}{pages_txt}."
-
-    sentences = [sentence_1, sentence_2, sentence_3, sentence_4]
-    if source_sentence:
-        sentences.append(source_sentence)
-    if sentence_5:
-        sentences.append(sentence_5)
+        pages_txt = f", pagine {', '.join(str(p) for p in source_pages[:5])}" if source_pages else ""
+        if len(source_pages) > 5:
+            pages_txt += "…"
+        sentences.append(f"Riferimento documento: {', '.join(source_docs[:2])}{pages_txt}.")
 
     justification = " ".join(sentences[:5])
 
-    # ── Audit record ─────────────────────────────────────────────────────────
+    explanation = HorizonExplainer().generate_full_explanation(
+        call=call_data,
+        scores=scored_call,
+        profile=company_profile,
+        pdf_excerpts=None,
+    )
+
     desc_sample = company_profile.get("description", "")[:200]
     company_hash = hashlib.md5(desc_sample.encode("utf-8")).hexdigest()
-
     audit_record = {
         "call_id": call_id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "company_description_hash": company_hash,
-        "score_breakdown": score_breakdown,
+        "score_breakdown": _json_safe(score_breakdown),
         "justification": justification,
     }
-
     _append_audit_record(audit_record, config=config)
+    logger.debug("Giustificazione generata per %s", call_id)
+    return justification, audit_record, explanation
 
-    logger.debug("Giustificazione generata per %s (score=%d%%)", call_id, score_pct)
-    return justification, audit_record
 
-
-def _append_audit_record(record: dict, config: dict | None = None) -> None:
-    """
-    Appende un audit_record al file data/audit_log.jsonl (un JSON per riga).
-
-    Crea il file se non esiste. In caso di errore di scrittura, logga il
-    warning senza sollevare eccezione (il logging non deve bloccare l'app).
-
-    Args:
-        record: dizionario da serializzare come JSON
-    """
+def _append_audit_record(record: dict[str, Any], config: dict[str, Any] | None = None) -> None:
     effective_config = config or CONFIG
     audit_path = effective_config["audit_log"]
     try:
         os.makedirs(os.path.dirname(audit_path), exist_ok=True)
         with open(audit_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
-        logger.debug("Audit record scritto: %s", audit_path)
+            f.write(json.dumps(_json_safe(record), ensure_ascii=False) + "\n")
     except Exception as exc:
-        logger.warning("Impossibile scrivere audit log: %s", exc)
+        logger.warning("Impossibile scrivere audit log %s: %s", audit_path, exc)
